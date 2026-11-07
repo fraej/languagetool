@@ -27,6 +27,8 @@ def androidSources = tasks.register('prepareAndroidSources', Sync) {
                 'Map.of(Srx2SaxParser.VALIDATE_PARAMETER, false)')
             .replace('Pattern.UNICODE_CHARACTER_CLASS', '0')
             .replace('is.readAllBytes()', 'com.google.common.io.ByteStreams.toByteArray(is)')
+            .replaceAll(/new Scanner\(([^,]+), StandardCharsets\.UTF_8\)/,
+                'new Scanner($1, StandardCharsets.UTF_8.name())')
             .replace('HexFormat.of().formatHex(md.digest(data))',
                 'com.google.common.io.BaseEncoding.base16().lowerCase().encode(md.digest(data))')
             .replace('com.google.common.base.Suppliers', 'org.languagetool.offline.AndroidSuppliers')
@@ -44,7 +46,8 @@ def androidSources = tasks.register('prepareAndroidSources', Sync) {
 sourceSets {
     main {
         java.srcDirs = ['src/main/java', layout.buildDirectory.dir('generated/sources/languagetool')]
-        resources.srcDirs = ['../../languagetool-core/src/main/resources',
+        java.srcDir layout.buildDirectory.dir('generated/sources/morfologik')
+        resources.srcDirs = ['src/main/resources', '../../languagetool-core/src/main/resources',
                              '../../languagetool-language-modules/en/src/main/resources']
     }
 }
@@ -59,7 +62,38 @@ def managed = parentPom.dependencyManagement.dependencies.dependency.collectEntr
     [("${it.groupId.text()}:${it.artifactId.text()}".toString()): expand(it.version.text())]
 }
 
+configurations {
+    morfologikSources {
+        canBeConsumed = false
+        transitive = false
+    }
+}
+
+// Build the same pinned speller from source with the decoder fix. On Android,
+// an incomplete UTF-8 sequence can be reported by flush(), rather than decode().
+def morfologikSourceTask = tasks.register('prepareMorfologikSources', Sync) {
+    inputs.file('build.gradle')
+    from(provider { configurations.morfologikSources.collect { zipTree(it) } })
+    include 'morfologik/speller/*.java'
+    into layout.buildDirectory.dir('generated/sources/morfologik')
+    filteringCharset = 'UTF-8'
+    filter { line ->
+        line.replace('final CoderResult c = decoder.decode(byteBuffer, charBuffer, true);',
+                'CoderResult c = decoder.decode(byteBuffer, charBuffer, true);\n      if (c.isUnderflow()) c = decoder.flush(charBuffer);')
+            .replace('        decoder.flush(charBuffer);', '')
+            .replaceAll(/\b(byteBuffer|charBuffer)\.(clear|flip|position)\(/,
+                '((java.nio.Buffer) $1).$2(')
+    }
+    doLast {
+        def source = layout.buildDirectory.file('generated/sources/morfologik/morfologik/speller/Speller.java').get().asFile
+        if (!source.text.contains('if (c.isUnderflow()) c = decoder.flush(charBuffer);')) {
+            throw new GradleException('Review the Android decoder patch for this Morfologik version.')
+        }
+    }
+}
+
 dependencies {
+    morfologikSources "org.carrot2:morfologik-speller:${properties['morfologik.version']}:sources"
     api platform("io.opentelemetry:opentelemetry-bom:${properties['io.opentelemetry.version']}")
     [file('../../languagetool-core/pom.xml'),
      file('../../languagetool-language-modules/en/pom.xml')].each { pomFile ->
@@ -108,6 +142,10 @@ configurations.configureEach {
     exclude group: 'jakarta.xml.bind', module: 'jakarta.xml.bind-api'
     exclude group: 'jakarta.activation', module: 'jakarta.activation-api'
     exclude group: 'javax.activation', module: 'javax.activation-api'
+    if (name != 'morfologikSources') {
+        // The patched source above supplies these classes instead of the binary JAR.
+        exclude group: 'org.carrot2', module: 'morfologik-speller'
+    }
 }
 
 tasks.withType(JavaCompile).configureEach {
@@ -115,7 +153,7 @@ tasks.withType(JavaCompile).configureEach {
 }
 
 tasks.named('compileJava') {
-    dependsOn androidSources
+    dependsOn androidSources, morfologikSourceTask
 }
 
 tasks.named('processResources') {

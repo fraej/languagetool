@@ -24,6 +24,22 @@ import static org.junit.Assert.*;
 /** Runs against the installed APK, using Android's actual runtime and bundled assets. */
 @RunWith(AndroidJUnit4.class)
 public class OfflineDeviceTest {
+    @Test public void utf8SpellingSuggestions() {
+        List<byte[]> words = new java.util.ArrayList<>();
+        for (String word : new String[]{"café", "spelling", "spilling", "éclair"}) {
+            words.add(word.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        }
+        words.sort(morfologik.fsa.builders.FSABuilder.LEXICAL_ORDERING);
+        morfologik.stemming.DictionaryMetadata metadata = morfologik.stemming.DictionaryMetadata.builder()
+                .separator('+').encoding(java.nio.charset.StandardCharsets.UTF_8)
+                .encoder(morfologik.stemming.EncoderType.NONE).build();
+        morfologik.speller.Speller speller = new morfologik.speller.Speller(new morfologik.stemming.Dictionary(
+                morfologik.fsa.builders.FSABuilder.build(words), metadata));
+        assertTrue(speller.findReplacements("speling").contains("spelling"));
+        assertTrue(speller.findReplacements("cafe").contains("café"));
+        assertTrue(speller.findReplacements("eclair").contains("éclair"));
+    }
+
     @Test public void supplierInterfaceCompatibility() {
         java.util.concurrent.atomic.AtomicInteger calls = new java.util.concurrent.atomic.AtomicInteger();
         AndroidSuppliers.SharedSupplier<Object> shared = AndroidSuppliers.memoize(() -> {

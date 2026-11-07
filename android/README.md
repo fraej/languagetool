@@ -96,6 +96,12 @@ Guava. `AndroidSuppliers` bridges its suppliers to Java's supplier interface,
 preserving memoization and avoiding multi-release JAR interface mismatches.
 Stream reading and SHA-256 formatting use APIs available on Android 8.
 
+The pinned Morfologik speller is compiled from its Maven source artifact with a
+small decoder fix: check `flush()` before reading the next decoded character.
+Android can defer incomplete UTF-8 errors until that call. This retains accented
+dictionary words and spelling suggestions. The binary speller JAR is excluded
+to avoid duplicate classes, and its BSD license is bundled with the app.
+
 Notices embedded in the runtime JARs and LanguageTool's LGPL text are collected into an offline asset at build
 time. Shrinking and obfuscation are disabled in this first version because XML
 rules name Java classes reflectively. Release builds retain the same engine
