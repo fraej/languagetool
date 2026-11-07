@@ -2,23 +2,25 @@
 package org.languagetool.offline;
 
 import org.languagetool.JLanguageTool;
-import org.languagetool.language.AmericanEnglish;
-import org.languagetool.language.BritishEnglish;
+import org.languagetool.Languages;
 import org.languagetool.rules.RuleMatch;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
 /** Single-thread-confined adapter around the fork's local engine. */
 public final class OfflineChecker {
     public static final int MAX_CHARACTERS = 10_000;
+    public static final List<String> SUPPORTED_LANGUAGES = Collections.unmodifiableList(
+            Arrays.asList("en-US", "en-GB", "es", "ca-ES"));
     private JLanguageTool tool;
     private String dialect;
 
     public void prepare(String requestedDialect) {
-        if (!"en-US".equals(requestedDialect) && !"en-GB".equals(requestedDialect)) {
+        if (!SUPPORTED_LANGUAGES.contains(requestedDialect)) {
             throw new IllegalArgumentException("Unsupported dialect: " + requestedDialect);
         }
         if (tool != null && requestedDialect.equals(dialect)) {
@@ -28,8 +30,7 @@ public final class OfflineChecker {
         // loaders select it explicitly in the generated compatibility sources.
         System.setProperty("javax.xml.parsers.SAXParserFactory",
                 "org.apache.xerces.jaxp.SAXParserFactoryImpl");
-        tool = new JLanguageTool("en-GB".equals(requestedDialect)
-                ? BritishEnglish.getInstance() : AmericanEnglish.getInstance());
+        tool = new JLanguageTool(Languages.getLanguageForShortCode(requestedDialect));
         dialect = requestedDialect;
         // No remote-rule activation, model download, or language-model directory.
     }

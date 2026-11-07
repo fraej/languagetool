@@ -19,6 +19,7 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Spinner;
 import static org.junit.Assert.*;
 
 /** Runs against the installed APK, using Android's actual runtime and bundled assets. */
@@ -90,6 +91,50 @@ public class OfflineDeviceTest {
                 .filter(match -> match.spelling && match.replacements.contains("spelling"))
                 .findFirst().orElseThrow(AssertionError::new);
         assertEquals("Hello 😀.\n\nThis is a spelling mistake.", issue.apply(text, "spelling"));
+    }
+
+    @Test public void spanishAndCatalanFromInstalledApk() throws Exception {
+        OfflineChecker checker = new OfflineChecker();
+        String[][] examples = {
+                {"es", "Una casa bonito. Esto es un errror.", "bonita", "Tiene una canción bonita."},
+                {"ca-ES", "Una casa bonic. Això és un errror.", "bonica", "Aquesta és una pel·lícula bonica."}
+        };
+        for (String[] example : examples) {
+            List<OfflineChecker.Issue> issues = checker.check(example[1], example[0]);
+            assertTrue("Expected agreement rule in " + example[0], issues.stream().anyMatch(issue ->
+                    "AGREEMENT_POSTPONED_ADJ".equals(issue.ruleId) && issue.replacements.contains(example[2])));
+            assertTrue("Expected dictionary in " + example[0], issues.stream().anyMatch(issue ->
+                    issue.spelling && issue.replacements.contains("error")));
+            assertTrue("Accented words should be accepted", checker.check(example[3], example[0]).isEmpty());
+        }
+        for (String language : new String[]{"es", "ca-ES", "en-US", "es"}) {
+            String text = "😀\n\n" + ("ca-ES".equals(language) ? "Això és un errror."
+                    : "es".equals(language) ? "Esto es un errror." : "This is an errror.");
+            OfflineChecker.Issue issue = checker.check(text, language).stream()
+                    .filter(match -> match.spelling && match.replacements.contains("error"))
+                    .findFirst().orElseThrow(AssertionError::new);
+            assertEquals("errror", text.substring(issue.from, issue.to));
+            assertEquals(text.replace("errror", "error"), issue.apply(text, "error"));
+        }
+    }
+
+    @Test public void languageSelectionAndExamplesSurviveRecreation() {
+        try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class)) {
+            for (int position : new int[]{2, 3}) {
+                scenario.onActivity(activity -> {
+                    ((Spinner) activity.findViewById(R.id.checking_language)).setSelection(position);
+                    activity.findViewById(R.id.use_example).performClick();
+                });
+                scenario.recreate();
+                scenario.onActivity(activity -> {
+                    assertEquals(position, ((Spinner) activity.findViewById(R.id.checking_language))
+                            .getSelectedItemPosition());
+                    assertEquals(activity.getString(position == 2 ? R.string.sample_spanish : R.string.sample_catalan),
+                            ((EditText) activity.findViewById(R.id.editor)).getText().toString());
+                    ((EditText) activity.findViewById(R.id.editor)).setText("");
+                });
+            }
+        }
     }
 
     @Test public void editorAppliesCorrectionsAndRejectsStaleSuggestions() throws Exception {

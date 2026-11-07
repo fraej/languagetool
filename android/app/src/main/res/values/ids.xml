@@ -4,4 +4,6 @@
     <item name="check_text" type="id" />
     <item name="check_status" type="id" />
     <item name="suggestions" type="id" />
+    <item name="checking_language" type="id" />
+    <item name="use_example" type="id" />
 </resources>

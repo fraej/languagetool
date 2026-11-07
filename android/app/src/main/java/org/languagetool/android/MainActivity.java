@@ -100,9 +100,10 @@ public final class MainActivity extends Activity {
         add(root, text(getString(R.string.privacy), 13, 0xFF52675C), 8);
 
         language = new Spinner(this);
-        language.setContentDescription("English variant");
+        language.setId(R.id.checking_language);
+        language.setContentDescription("Checking language");
         ArrayAdapter<String> adapter = new ArrayAdapter<>(this,
-                android.R.layout.simple_spinner_dropdown_item, new String[]{"English (US)", "English (UK)"});
+                android.R.layout.simple_spinner_dropdown_item, getResources().getStringArray(R.array.checking_languages));
         language.setAdapter(adapter);
         language.setSelection(savedState == null ? 0 : savedState.getInt("dialect", 0));
         add(root, language, 18);
@@ -156,7 +157,9 @@ public final class MainActivity extends Activity {
         }
 
         Button sample = button(getString(R.string.sample));
-        sample.setOnClickListener(view -> editor.setText(R.string.sample_text));
+        sample.setId(R.id.use_example);
+        sample.setOnClickListener(view -> editor.setText("es".equals(dialect()) ? R.string.sample_spanish
+                : "ca-ES".equals(dialect()) ? R.string.sample_catalan : R.string.sample_text));
         root.addView(sample);
         LinearLayout statusRow = row();
         progress = new ProgressBar(this);
@@ -202,7 +205,7 @@ public final class MainActivity extends Activity {
     }
 
     private String dialect() {
-        return language.getSelectedItemPosition() == 1 ? "en-GB" : "en-US";
+        return OfflineChecker.SUPPORTED_LANGUAGES.get(language.getSelectedItemPosition());
     }
 
     private void invalidate() {

@@ -1,7 +1,7 @@
 ## LanguageTool
 
 **Android:** This fork includes a [fully offline Java Android editor](android/README.md)
-with bundled English grammar rules and dictionaries. See its README for builds,
+with bundled English, Spanish, and Catalan grammar rules and dictionaries. See its README for builds,
 installation, and device tests.
 
 **LanguageTool** is open-source proofreading software for English, Spanish, French, German,

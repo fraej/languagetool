@@ -4,7 +4,15 @@
     <string name="editor_hint">Write or paste something here…</string>
     <string name="privacy">On-device checking · No internet permission</string>
     <string name="sample_text" tools:ignore="Typos">This are a example. I have have a speling mistake.</string>
-    <string name="initializing">Loading bundled English rules…</string>
+    <string name="sample_spanish" tools:ignore="Typos">Una casa bonito. Esto es un errror.</string>
+    <string name="sample_catalan" tools:ignore="Typos">Una casa bonic. Això és un errror.</string>
+    <string-array name="checking_languages">
+        <item>English (US)</item>
+        <item>English (UK)</item>
+        <item>Español</item>
+        <item>Català</item>
+    </string-array>
+    <string name="initializing">Loading bundled language rules…</string>
     <string name="checking">Checking on your device…</string>
     <string name="ready">Ready to check your writing.</string>
     <string name="empty">Add some text to start checking.</string>
@@ -22,5 +30,5 @@
         <item quantity="other">%1$d suggestions · %2$d ms</item>
     </plurals>
     <string name="no_replacement">Review this part of your text.</string>
-    <string name="about_text">LanguageTool Offline uses the engine, English grammar rules, and dictionaries bundled with this app. Text stays on your device. No account, server, or download is needed.\n\nEnglish (US and UK) is supported. Hosted AI and large n-gram models are not included.\n\nLanguageTool is available under LGPL 2.1 or later; dictionaries and dependencies have their own licenses. Source: https://github.com/fraej/languagetool</string>
+    <string name="about_text">LanguageTool Offline uses the engine, grammar rules, and dictionaries bundled with this app. Text stays on your device. No account, server, or download is needed.\n\nEnglish (US and UK), Spanish, and Catalan are supported. Hosted AI and large n-gram models are not included.\n\nLanguageTool is available under LGPL 2.1 or later; dictionaries and dependencies have their own licenses. Source: https://github.com/fraej/languagetool</string>
 </resources>

@@ -49,6 +49,38 @@ public class OfflineCheckerTest {
         assertTrue(checker.check("  \n", "en-US").isEmpty());
     }
 
+    @Test public void spanishGrammarSpellingAndAccents() throws Exception {
+        assertLanguage("es", "Una casa bonito. Esto es un errror.", "bonita",
+                "Tiene una canción bonita.");
+    }
+
+    @Test public void catalanGrammarSpellingAndAccents() throws Exception {
+        assertLanguage("ca-ES", "Una casa bonic. Això és un errror.", "bonica",
+                "Aquesta és una pel·lícula bonica.");
+    }
+
+    @Test public void switchesLanguagesAndPreservesUnicodeOffsets() throws Exception {
+        for (String language : new String[]{"es", "ca-ES", "en-US", "es"}) {
+            String text = "😀\n\n" + ("ca-ES".equals(language) ? "Això és un errror."
+                    : "es".equals(language) ? "Esto es un errror." : "This is an errror.");
+            OfflineChecker.Issue issue = checker.check(text, language).stream()
+                    .filter(match -> match.spelling && match.replacements.contains("error"))
+                    .findFirst().orElseThrow(AssertionError::new);
+            assertEquals("errror", text.substring(issue.from, issue.to));
+            assertEquals(text.replace("errror", "error"), issue.apply(text, "error"));
+        }
+    }
+
+    private static void assertLanguage(String language, String text, String adjective,
+                                       String correctText) throws Exception {
+        List<OfflineChecker.Issue> issues = checker.check(text, language);
+        assertTrue("Expected agreement rule in " + language, issues.stream().anyMatch(issue ->
+                "AGREEMENT_POSTPONED_ADJ".equals(issue.ruleId) && issue.replacements.contains(adjective)));
+        assertTrue("Expected dictionary in " + language, issues.stream().anyMatch(issue ->
+                issue.spelling && issue.replacements.contains("error")));
+        assertTrue("Accented words should be accepted", checker.check(correctText, language).isEmpty());
+    }
+
     @Test(expected = IllegalArgumentException.class)
     public void refusesOversizeText() throws Exception {
         checker.check("a".repeat(OfflineChecker.MAX_CHARACTERS + 1), "en-US");

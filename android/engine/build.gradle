@@ -2,6 +2,8 @@ plugins {
     id 'java-library'
 }
 
+def bundledLanguages = ['en', 'es', 'ca']
+
 java {
     sourceCompatibility = JavaVersion.VERSION_17
     targetCompatibility = JavaVersion.VERSION_17
@@ -12,7 +14,7 @@ java {
 def androidSources = tasks.register('prepareAndroidSources', Sync) {
     inputs.file('build.gradle')
     from '../../languagetool-core/src/main/java'
-    from '../../languagetool-language-modules/en/src/main/java'
+    bundledLanguages.each { from "../../languagetool-language-modules/${it}/src/main/java" }
     into layout.buildDirectory.dir('generated/sources/languagetool')
     filteringCharset = 'UTF-8'
     filter { line ->
@@ -27,14 +29,15 @@ def androidSources = tasks.register('prepareAndroidSources', Sync) {
                 'Map.of(Srx2SaxParser.VALIDATE_PARAMETER, false)')
             .replace('Pattern.UNICODE_CHARACTER_CLASS', '0')
             .replace('is.readAllBytes()', 'com.google.common.io.ByteStreams.toByteArray(is)')
+            .replace('inputStream.readAllBytes()', 'com.google.common.io.ByteStreams.toByteArray(inputStream)')
             .replaceAll(/new Scanner\(([^,]+), StandardCharsets\.UTF_8\)/,
                 'new Scanner($1, StandardCharsets.UTF_8.name())')
             .replace('HexFormat.of().formatHex(md.digest(data))',
                 'com.google.common.io.BaseEncoding.base16().lowerCase().encode(md.digest(data))')
             .replace('com.google.common.base.Suppliers', 'org.languagetool.offline.AndroidSuppliers')
             .replaceAll(/\bSuppliers\./, 'AndroidSuppliers.')
-            .replaceAll(/\bPattern\.compile\(/, 'org.languagetool.offline.AndroidPatterns.compile(')
-            .replaceAll(/\bPattern\.matches\(/, 'org.languagetool.offline.AndroidPatterns.matches(')
+            .replaceAll(/(?<![\w.])(?:java\.util\.regex\.)?Pattern\.(compile|matches)\(/,
+                'org.languagetool.offline.AndroidPatterns.$1(')
             .replace('import static java.util.regex.Pattern.compile;',
                 'import static org.languagetool.offline.AndroidPatterns.compile;')
             .replace('import static java.util.regex.Pattern.*;',
@@ -47,8 +50,8 @@ sourceSets {
     main {
         java.srcDirs = ['src/main/java', layout.buildDirectory.dir('generated/sources/languagetool')]
         java.srcDir layout.buildDirectory.dir('generated/sources/morfologik')
-        resources.srcDirs = ['src/main/resources', '../../languagetool-core/src/main/resources',
-                             '../../languagetool-language-modules/en/src/main/resources']
+        resources.srcDirs = ['src/main/resources', '../../languagetool-core/src/main/resources'] +
+                bundledLanguages.collect { "../../languagetool-language-modules/${it}/src/main/resources" }
     }
 }
 
@@ -95,8 +98,9 @@ def morfologikSourceTask = tasks.register('prepareMorfologikSources', Sync) {
 dependencies {
     morfologikSources "org.carrot2:morfologik-speller:${properties['morfologik.version']}:sources"
     api platform("io.opentelemetry:opentelemetry-bom:${properties['io.opentelemetry.version']}")
-    [file('../../languagetool-core/pom.xml'),
-     file('../../languagetool-language-modules/en/pom.xml')].each { pomFile ->
+    ([file('../../languagetool-core/pom.xml')] + bundledLanguages.collect {
+        file("../../languagetool-language-modules/${it}/pom.xml")
+    }).each { pomFile ->
         new XmlSlurper().parse(pomFile).dependencies.dependency.each { dep ->
             def group = dep.groupId.text()
             def artifact = dep.artifactId.text()
@@ -158,4 +162,20 @@ tasks.named('compileJava') {
 
 tasks.named('processResources') {
     duplicatesStrategy = DuplicatesStrategy.INCLUDE
+    // Each module supplies this same path; merge its class registry explicitly.
+    def registries = bundledLanguages.collect {
+        file("../../languagetool-language-modules/${it}/src/main/resources/META-INF/org/languagetool/language-module.properties")
+    }
+    inputs.files(registries)
+    exclude 'META-INF/org/languagetool/language-module.properties'
+    doLast {
+        def classes = registries.collectMany { registry ->
+            def module = new Properties()
+            registry.withReader('UTF-8') { module.load(it) }
+            module.getProperty('languageClasses').split(',').toList()
+        }
+        def registry = destinationDir.toPath().resolve('META-INF/org/languagetool/language-module.properties').toFile()
+        registry.parentFile.mkdirs()
+        registry.setText("languageClasses=${classes.join(',')}\n", 'UTF-8')
+    }
 }

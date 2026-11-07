@@ -8,6 +8,8 @@ on:
       - 'android/**'
       - 'languagetool-core/**'
       - 'languagetool-language-modules/en/**'
+      - 'languagetool-language-modules/es/**'
+      - 'languagetool-language-modules/ca/**'
       - 'pom.xml'
       - '.github/workflows/android.yml'
   pull_request:
@@ -15,6 +17,8 @@ on:
       - 'android/**'
       - 'languagetool-core/**'
       - 'languagetool-language-modules/en/**'
+      - 'languagetool-language-modules/es/**'
+      - 'languagetool-language-modules/ca/**'
       - 'pom.xml'
       - '.github/workflows/android.yml'
 

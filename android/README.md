@@ -1,13 +1,14 @@
 # LanguageTool Offline for Android
 
 A native **Java** Android editor that runs this fork's LanguageTool engine on the
-device. English grammar rules, spelling dictionaries, POS data, and NLP models
+device. English, Spanish, and Catalan grammar rules, dictionaries, POS data, and NLP models
 ship inside the APK. Checking works on first launch in airplane mode. There is
 no account, server, first-run download, or `INTERNET` permission.
 
 ## Features
 
-- English (US) and English (UK), selectable in the editor.
+- English (US/UK), Spanish, and Catalan, selectable in the editor.
+- Bundled resources for every supported language, with no language-pack downloads.
 - Grammar, spelling, punctuation, and style suggestions from the local engine.
 - Automatic checking after a 700 ms typing pause, with an explicit Check button.
 - Highlighted error ranges, explanations, and tap-to-apply replacements.
@@ -54,19 +55,23 @@ adb shell svc data disable
 ```
 
 Device tests exercise the installed engine and packaged resources, verify the
-absence of `INTERNET`, and check grammar, spelling, UK spelling, and UTF-16
+absence of `INTERNET`, and check grammar, spelling, language switching, and UTF-16
 offsets after emoji and newlines. Enable airplane mode before first launch and
 use **Try an example** to verify the same behavior manually.
+The example follows the selected language. Spanish and Catalan tests also check
+adjective agreement, accented words, and restored language selection.
 
 GitHub Actions builds the APK and runs device tests on API 26 and 35. Build
 artifacts are available from the workflow run; they are development builds.
 
 ## How the port works
 
-`engine/` compiles `languagetool-core` and the English module directly from this
+`engine/` compiles `languagetool-core` and the English, Spanish, and Catalan modules directly from this
 checkout. It reads dependency coordinates and versions from the existing Maven
 POMs, so local changes to rules and engine code become part of the app. The
-Android build adapts Java 16's `Stream.toList()` in generated sources, while
+language-module class registries are merged so all bundled languages can be
+discovered. Spanish and Catalan use their bundled Morfologik dictionaries.
+The Android build adapts Java 16's `Stream.toList()` in generated sources, while
 core-library desugaring supplies supported newer Java APIs on older Android.
 The desktop sources retain their original stream behavior.
 The Android sources route regex compilation through `AndroidPatterns`, which
@@ -115,11 +120,11 @@ newest queued check starts.
 
 ## Scope and limits
 
-This app includes the open-source local English engine, not LanguageTool's
+This app includes the open-source local English, Spanish, and Catalan engines, not LanguageTool's
 hosted AI services or premium checks. Optional large n-gram datasets are not
 bundled. Other languages need their own resources, dependency review, and device
-tests before being added. Startup time and memory usage vary by device; English
-resources are loaded lazily on the first non-empty check.
+tests before being added. Startup time and memory usage vary by device; language
+resources are loaded lazily when first selected for a non-empty check.
 
 The UI and port code are LGPL 2.1 or later, like the engine. Bundled resources and
 dependencies retain their own licenses and notices. Full source and build
