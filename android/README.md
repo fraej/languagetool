@@ -84,13 +84,19 @@ the grammar files. The Android build explicitly selects bundled Xerces in the
 rule loaders; Android ignores the usual Java factory-selection system property.
 SRX sentence-splitting rules use the platform parser without XSD validation,
 which Android's factory does not support. These bundled SRX rules are trusted
-application resources, not user-supplied XML. The shared `RuleSaxParser` helper preserves external-DTD loading
-being disabled and tolerates only unsupported JDK-specific entity-limit
+application resources, not user-supplied XML. The shared `RuleSaxParser` helper
+preserves external-DTD loading being disabled and tolerates only unsupported JDK-specific entity-limit
 properties. Both grammar and disambiguation loaders use this helper.
 
 The Android dependency graph omits the unrelated Jakarta JAXB 4 runtime and
-duplicate legacy JAXB/activation API classes. Notices embedded in the runtime
-JARs and LanguageTool's LGPL text are collected into an offline asset at build
+duplicate legacy JAXB/activation API classes.
+
+The engine compiles against Android dependency variants, including Android
+Guava. `AndroidSuppliers` bridges its suppliers to Java's supplier interface,
+preserving memoization and avoiding multi-release JAR interface mismatches.
+Stream reading and SHA-256 formatting use APIs available on Android 8.
+
+Notices embedded in the runtime JARs and LanguageTool's LGPL text are collected into an offline asset at build
 time. Shrinking and obfuscation are disabled in this first version because XML
 rules name Java classes reflectively. Release builds retain the same engine
 classes and resources as debug builds.

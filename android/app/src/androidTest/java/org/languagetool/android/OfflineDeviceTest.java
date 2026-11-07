@@ -9,6 +9,7 @@ import org.junit.runner.RunWith;
 
 import org.languagetool.offline.OfflineChecker;
 import org.languagetool.offline.AndroidPatterns;
+import org.languagetool.offline.AndroidSuppliers;
 
 import java.util.Arrays;
 import java.util.List;
@@ -23,6 +24,18 @@ import static org.junit.Assert.*;
 /** Runs against the installed APK, using Android's actual runtime and bundled assets. */
 @RunWith(AndroidJUnit4.class)
 public class OfflineDeviceTest {
+    @Test public void supplierInterfaceCompatibility() {
+        java.util.concurrent.atomic.AtomicInteger calls = new java.util.concurrent.atomic.AtomicInteger();
+        AndroidSuppliers.SharedSupplier<Object> shared = AndroidSuppliers.memoize(() -> {
+            calls.incrementAndGet();
+            return new Object();
+        });
+        java.util.function.Supplier<Object> javaSupplier = shared;
+        com.google.common.base.Supplier<Object> guavaSupplier = shared;
+        assertSame(javaSupplier.get(), guavaSupplier.get());
+        assertEquals(1, calls.get());
+    }
+
     @Test public void javaRegexCompatibility() {
         assertTrue(AndroidPatterns.matches("(?)id", "id"));
         assertTrue(AndroidPatterns.matches("\\p{IsPunctuation}", "!"));

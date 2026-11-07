@@ -26,6 +26,11 @@ def androidSources = tasks.register('prepareAndroidSources', Sync) {
             .replace('Map.of(Srx2SaxParser.VALIDATE_PARAMETER, true)',
                 'Map.of(Srx2SaxParser.VALIDATE_PARAMETER, false)')
             .replace('Pattern.UNICODE_CHARACTER_CLASS', '0')
+            .replace('is.readAllBytes()', 'com.google.common.io.ByteStreams.toByteArray(is)')
+            .replace('HexFormat.of().formatHex(md.digest(data))',
+                'com.google.common.io.BaseEncoding.base16().lowerCase().encode(md.digest(data))')
+            .replace('com.google.common.base.Suppliers', 'org.languagetool.offline.AndroidSuppliers')
+            .replaceAll(/\bSuppliers\./, 'AndroidSuppliers.')
             .replaceAll(/\bPattern\.compile\(/, 'org.languagetool.offline.AndroidPatterns.compile(')
             .replaceAll(/\bPattern\.matches\(/, 'org.languagetool.offline.AndroidPatterns.matches(')
             .replace('import static java.util.regex.Pattern.compile;',
@@ -71,6 +76,11 @@ dependencies {
                 return
             }
             def version = expand(dep.version.text()) ?: managed["${group}:${artifact}".toString()]
+            // Compile against the same interfaces Android packages, avoiding
+            // Java 9 multi-release interface additions in Guava's JRE artifact.
+            if (group == 'com.google.guava' && artifact == 'guava') {
+                version = version.replace('-jre', '-android')
+            }
             def configuration = scope == 'provided' || group == 'org.json' ? 'compileOnly' : 'api'
             add(configuration, version ? "${group}:${artifact}:${version}" : "${group}:${artifact}") {
                 dep.exclusions.exclusion.each { item ->
@@ -88,6 +98,10 @@ dependencies {
 }
 
 configurations.configureEach {
+    // This Java module is consumed by Android. Guava's Gradle metadata otherwise
+    // selects JRE interfaces for compilation and different interfaces at runtime.
+    attributes.attribute(TargetJvmEnvironment.TARGET_JVM_ENVIRONMENT_ATTRIBUTE,
+            objects.named(TargetJvmEnvironment, TargetJvmEnvironment.ANDROID))
     // jaxb-impl 2.3.3 already contains these core classes and message bundles.
     exclude group: 'com.sun.xml.bind', module: 'jaxb-core'
     // Jakarta's 2.3.x coordinates still contain the javax packages.
