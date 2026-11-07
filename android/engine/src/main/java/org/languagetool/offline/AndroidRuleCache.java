@@ -44,6 +44,45 @@ public final class AndroidRuleCache {
     /** Caller supplies an app-version-specific directory, invalidating old rules. */
     public static void configure(File versionDirectory) {
         directory = versionDirectory;
+        AndroidStartupCache.configure();
+    }
+
+    static boolean enabled() { return directory != null; }
+
+    private static File dataFile(String key) {
+        File root = directory;
+        return root == null ? null : new File(root, hex(digest().digest(key.getBytes(StandardCharsets.UTF_8))) + ".data");
+    }
+
+    static byte[] readData(String key) {
+        File file = dataFile(key);
+        if (file == null || !file.isFile()) return null;
+        try {
+            verify(file);
+            try (DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(file)))) {
+                byte[] header = new byte[HEADER]; in.readFully(header);
+                byte[] data = new byte[(int) file.length() - HEADER]; in.readFully(data);
+                return data;
+            }
+        } catch (IOException invalid) { file.delete(); return null; }
+    }
+
+    static void writeData(String key, byte[] data) {
+        File file = dataFile(key);
+        if (file == null || data.length > MAX_BYTES - HEADER) return;
+        File temporary = null;
+        try {
+            Files.createDirectories(file.getParentFile().toPath());
+            temporary = File.createTempFile("data-", ".tmp", file.getParentFile());
+            try (FileOutputStream raw = new FileOutputStream(temporary);
+                 DataOutputStream out = new DataOutputStream(new BufferedOutputStream(raw))) {
+                out.writeInt(MAGIC); out.writeInt(FORMAT); out.write(digest().digest(data)); out.write(data);
+                out.flush(); raw.getFD().sync();
+            }
+            Files.move(temporary.toPath(), file.toPath(), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+        } catch (IOException unavailableStorage) {
+            // A cache must never prevent checking with the bundled resources.
+        } finally { if (temporary != null) temporary.delete(); }
     }
 
     public static long hits() { return hits.get(); }

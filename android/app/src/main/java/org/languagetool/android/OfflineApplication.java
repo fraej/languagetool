@@ -14,6 +14,7 @@ public final class OfflineApplication extends Application {
     volatile long startupCacheHits;
     volatile long startupCacheMisses;
     volatile String startupLanguage;
+    volatile String startupDetails;
 
     @Override public void onCreate() {
         super.onCreate();
@@ -30,6 +31,7 @@ public final class OfflineApplication extends Application {
                 startupMilliseconds = SystemClock.elapsedRealtime() - started;
                 startupCacheHits = AndroidRuleCache.hits() - hits;
                 startupCacheMisses = AndroidRuleCache.misses() - misses;
+                startupDetails = org.languagetool.offline.AndroidStartupCache.statistics();
                 Log.i("LangTAndroid", "Language startup ms=" + startupMilliseconds
                         + " cache_hits=" + startupCacheHits + " cache_misses=" + startupCacheMisses);
             }

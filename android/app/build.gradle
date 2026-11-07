@@ -10,9 +10,9 @@ android {
         applicationId 'org.languagetool.android.offline'
         minSdk 33
         targetSdk 35
-        versionCode 6
-        versionName '0.6.0'
-        testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
+        versionCode 7
+        versionName '0.7.0'
+        testInstrumentationRunner 'org.languagetool.android.LangTTestRunner'
     }
 
     compileOptions {
@@ -33,12 +33,14 @@ android {
 
     buildTypes {
         release {
+            signingConfig signingConfigs.debug
             // XML rules name classes reflectively. Keep the first release's
             // engine bytecode and resources intact, just like the tested debug APK.
             minifyEnabled false
             shrinkResources false
         }
     }
+    testBuildType 'release'
     buildFeatures { buildConfig true }
 }
 

@@ -46,13 +46,13 @@ jobs:
         with:
           cache-read-only: false
       - name: Test engine, lint, and build APKs
-        run: ./gradlew :engine:test :app:lintDebug :app:assembleDebug :app:assembleDebugAndroidTest :app:assembleRelease
+        run: ./gradlew :engine:test :app:lintRelease :app:assembleDebug :app:assembleRelease :app:assembleReleaseAndroidTest
       - uses: actions/upload-artifact@v4
         with:
           name: languagetool-offline-apks
           path: |
             android/app/build/outputs/apk/debug/*.apk
-            android/app/build/outputs/apk/androidTest/debug/*.apk
+            android/app/build/outputs/apk/androidTest/release/*.apk
             android/app/build/outputs/apk/release/*.apk
       - uses: actions/upload-artifact@v4
         if: always()
@@ -60,7 +60,7 @@ jobs:
           name: engine-and-lint-reports
           path: |
             android/engine/build/reports/tests/
-            android/app/build/reports/lint-results-debug.*
+            android/app/build/reports/lint-results-release.*
 
   device:
     needs: build
@@ -93,17 +93,20 @@ jobs:
             adb shell settings put global airplane_mode_on 1
             adb shell svc wifi disable || true
             adb shell svc data disable || true
-            adb install apks/debug/app-debug.apk
-            adb install apks/androidTest/debug/app-debug-androidTest.apk
-            adb shell am instrument -w -e class org.languagetool.android.StartupDeviceTest#saveLastLanguage org.languagetool.android.offline.test/androidx.test.runner.AndroidJUnitRunner | tee startup-save.txt
+            adb install apks/release/app-release.apk
+            adb install -t apks/androidTest/release/app-release-androidTest.apk
+            adb shell am instrument -w -e class org.languagetool.android.StartupDeviceTest#saveLastLanguage org.languagetool.android.offline.test/org.languagetool.android.LangTTestRunner | tee startup-save.txt
             grep -q 'OK (1 test)' startup-save.txt
             adb shell am force-stop org.languagetool.android.offline
-            adb shell am instrument -w -e class org.languagetool.android.StartupDeviceTest#restoreLastLanguageAfterProcessDeath org.languagetool.android.offline.test/androidx.test.runner.AndroidJUnitRunner | tee startup-restore.txt
+            adb shell am instrument -w -e disableStartupDataCache true -e class org.languagetool.android.StartupDeviceTest#profileWithoutDataCache org.languagetool.android.offline.test/org.languagetool.android.LangTTestRunner | tee startup-baseline.txt
+            grep -q 'OK (1 test)' startup-baseline.txt
+            adb shell am force-stop org.languagetool.android.offline
+            adb shell am instrument -w -e class org.languagetool.android.StartupDeviceTest#restoreLastLanguageAfterProcessDeath org.languagetool.android.offline.test/org.languagetool.android.LangTTestRunner | tee startup-restore.txt
             grep -q 'OK (1 test)' startup-restore.txt
             adb shell am force-stop org.languagetool.android.offline
-            adb shell am instrument -w -e notClass org.languagetool.android.StartupDeviceTest org.languagetool.android.offline.test/androidx.test.runner.AndroidJUnitRunner | tee device-tests.txt
-            mkdir -p screenshots
-            for name in editor.png language-picker.png corrections.png dark-editor.png; do adb exec-out run-as org.languagetool.android.offline cat files/screenshots/$name > screenshots/$name; done
+            adb shell am instrument -w -e notClass org.languagetool.android.StartupDeviceTest org.languagetool.android.offline.test/org.languagetool.android.LangTTestRunner | tee device-tests.txt
+            adb pull /sdcard/Android/data/org.languagetool.android.offline/files/screenshots .
+            adb pull /sdcard/Android/data/org.languagetool.android.offline/files/startup-samples .
             grep -q 'OK (' device-tests.txt
       - uses: actions/upload-artifact@v4
         if: always()
@@ -112,5 +115,7 @@ jobs:
           path: |
             device-tests.txt
             startup-save.txt
+            startup-baseline.txt
             startup-restore.txt
+            startup-samples/
             screenshots/

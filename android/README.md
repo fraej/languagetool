@@ -31,6 +31,8 @@ no account, server, first-run download, or `INTERNET` permission.
 - Store expanded grammar/disambiguation rule data for the last-used profile in
   private permanent storage, so a new process can bypass XML parsing and entity
   expansion. Cache checksums detect damage; each app update gets a fresh cache.
+- Persist compiled supplemental spelling dictionaries, POS-pattern intersections,
+  and multiword maps, avoiding their reconstruction on subsequent cold starts.
 - Bundled open-source notices accessible from About & licenses.
 
 Android 13 (API 33) or later is required. This is an editor, not a keyboard or an
@@ -55,17 +57,19 @@ first build needs internet to resolve tools and dependencies; the installed app
 does not. A subsequent build can use `--offline` after dependencies are cached.
 Maven installation and a full desktop LanguageTool build are not required.
 
-`./gradlew :app:assembleRelease` creates an unsigned release APK. Sign it with
-your own release key before distribution; no release credentials belong in this
-repository. Debug APKs are already signed with the local development key.
+`./gradlew :app:assembleRelease` creates `app-release.apk`, a non-debuggable
+development release signed with the local development key. Published development
+APKs use the CI runner's development key. Configure your own stable release key
+for production distribution; no private release credentials belong in this
+repository. Debug APKs remain available for local development.
 
 ## Verify offline operation
 
 ```sh
-./gradlew :engine:test :app:lintDebug :app:assembleDebugAndroidTest
+./gradlew :engine:test :app:lintRelease :app:assembleReleaseAndroidTest
 adb shell svc wifi disable
 adb shell svc data disable
-./gradlew :app:connectedDebugAndroidTest
+./gradlew :app:connectedReleaseAndroidTest
 ```
 
 Device tests exercise the installed engine and packaged resources, verify the
@@ -144,13 +148,19 @@ tests before being added. Startup time and memory usage vary by device. The last
 selected language starts loading on application startup, before any user text is
 checked. Returning while the app process is alive reuses that initialized engine.
 After process death, cached SAX data skips XML parsing but the engine must still
-recreate Java rule objects and native regexes and initialize dictionaries. Cold
+recreate Java rule objects and native regexes. Compiled supplemental dictionaries,
+POS-pattern intersections, and prepared multiword maps also persist, avoiding
+dictionary FSA compilation, repeated POS scans, and multiword expansion. Cold
 startup is not instantaneous. The cache is an optimization, not a saved JVM heap.
 It contains bundled rule data only, never submitted text. Only the last warmed
 profile is retained on disk, and old-version cache data is removed. A failed or
 unwritable cache falls back to bundled XML without disabling language checks.
 XML examples used by upstream rule tests are omitted from the Android cache and
 runtime rule objects; pattern tokens, filters, messages and suggestions are retained.
+The installed-app CI suite runs against the signed non-debuggable release APK.
+It compares fresh processes on the same emulator with computed-data caches
+disabled and enabled, records startup samples/timings, and checks that cached
+startup does not rebuild dictionaries, POS intersections, or multiword maps.
 Inactive languages' cached XML rule lists are released when switching languages
 or varieties, while shared dictionaries remain available. This Android-only
 adaptation avoids keeping separate large Catalan grammar lists for every variety.

@@ -321,7 +321,7 @@ public class OfflineDeviceTest {
             throw new AssertionError("UI did not settle for screenshot", error);
         }
         java.io.File folder = new java.io.File(InstrumentationRegistry.getInstrumentation()
-                .getTargetContext().getFilesDir(), "screenshots");
+                .getTargetContext().getExternalFilesDir(null), "screenshots");
         assertTrue(folder.isDirectory() || folder.mkdirs());
         android.graphics.Bitmap bitmap = InstrumentationRegistry.getInstrumentation().getUiAutomation().takeScreenshot();
         assertNotNull(bitmap);

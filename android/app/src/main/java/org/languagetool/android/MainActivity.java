@@ -282,6 +282,7 @@ public final class MainActivity extends AppCompatActivity {
             try {
                 session.warmUp(requested);
                 List<Issue> issues = checker.check(snapshot, requested);
+                org.languagetool.offline.AndroidStartupCache.flush();
                 main.post(() -> {
                     if (destroyed || revision != ticket) return;
                     checkedText = snapshot;

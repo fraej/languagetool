@@ -17,6 +17,25 @@ def androidSources = tasks.register('prepareAndroidSources', Sync) {
     bundledLanguages.each { from "../../languagetool-language-modules/${it}/src/main/java" }
     into layout.buildDirectory.dir('generated/sources/languagetool')
     filteringCharset = 'UTF-8'
+    filesMatching('**/MorfologikMultiSpeller.java') {
+        filter { line ->
+            line.replace('String cacheKey = dictPath + "|" + infoPath;', 'String cacheKey = dictPath + "|" + infoPath + "|" + (language == null ? "" : language.getShortCodeWithCountryAndVariant());')
+                .replace('List<byte[]> linesCopy = lines.get();', 'if (!isUserDict) { Dictionary saved = org.languagetool.offline.AndroidStartupCache.dictionary(cacheKey, infoPath); if (saved != null) { dicPathToDict.put(cacheKey, saved); return saved; } }\n      List<byte[]> linesCopy = lines.get();')
+                .replace('ByteArrayInputStream fsaInStream = new ByteArrayInputStream(fsaOutStream.toByteArray());', 'byte[] compiledDictionary = fsaOutStream.toByteArray();\n      if (!isUserDict) org.languagetool.offline.AndroidStartupCache.saveDictionary(cacheKey, infoPath, compiledDictionary);\n      ByteArrayInputStream fsaInStream = new ByteArrayInputStream(compiledDictionary);')
+                .replace('Dictionary dictionary = getDictionary(lineSupplier, plainTextReaderPaths.toString(),', 'Dictionary dictionary;\n    try (BufferedReader source = plainTextReader; BufferedReader variant = languageVariantPlainTextReader) {\n    dictionary = getDictionary(lineSupplier, plainTextReaderPaths.toString(),')
+                .replace('dictPath.replace(DICTIONARY_FILENAME_EXTENSION, ".info"), false, 0);', 'dictPath.replace(DICTIONARY_FILENAME_EXTENSION, ".info"), false, 0);\n    }')
+        }
+    }
+    filesMatching('**/StringMatcher.java') {
+        filter { line ->
+            line.replace('private static Set<String> intersectWithUniverse(String pattern, boolean caseSensitive, Set<String> universe) {', 'private static Set<String> intersectWithUniverse(String pattern, boolean caseSensitive, Set<String> universe) {\n    return org.languagetool.offline.AndroidStartupCache.postags(pattern, caseSensitive, universe, () -> intersectWithUniverseUncached(pattern, caseSensitive, universe));\n  }\n  private static Set<String> intersectWithUniverseUncached(String pattern, boolean caseSensitive, Set<String> universe) {')
+        }
+    }
+    filesMatching('**/MultiWordChunker.java') {
+        filter { line ->
+            line.replace('fillMaps(mStartSpace, mStartNoSpace, mFullSpace, mFullNoSpace);', 'String cacheKey = settings.filename + "|" + settings.allowFirstCapitalized + "|" + settings.allowAllUppercase + "|" + settings.allowTitlecase + "|" + settings.defaultTag + "|" + java.util.Locale.getDefault().toLanguageTag();\n      if (!org.languagetool.offline.AndroidStartupCache.chunker(cacheKey, mStartSpace, mStartNoSpace, mFullSpace, mFullNoSpace)) {\n        fillMaps(mStartSpace, mStartNoSpace, mFullSpace, mFullNoSpace);\n        org.languagetool.offline.AndroidStartupCache.saveChunker(cacheKey, mStartSpace, mStartNoSpace, mFullSpace, mFullNoSpace);\n      }')
+        }
+    }
     filesMatching('**/PatternRuleLoader.java') {
         filter { line ->
             line.replace('PatternRuleHandler handler = new PatternRuleHandler(filename, lang);', 'PatternRuleHandler handler;')

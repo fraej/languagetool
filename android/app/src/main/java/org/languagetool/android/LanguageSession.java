@@ -2,6 +2,7 @@
 package org.languagetool.android;
 
 import org.languagetool.offline.AndroidRuleCache;
+import org.languagetool.offline.AndroidStartupCache;
 import org.languagetool.offline.OfflineChecker;
 
 import java.io.File;
@@ -14,7 +15,8 @@ import java.util.concurrent.TimeUnit;
 final class LanguageSession {
     final OfflineChecker checker = new OfflineChecker();
     final ThreadPoolExecutor worker = new ThreadPoolExecutor(1, 1, 0L,
-            TimeUnit.MILLISECONDS, new ArrayBlockingQueue<>(1), new ThreadPoolExecutor.DiscardOldestPolicy());
+            TimeUnit.MILLISECONDS, new ArrayBlockingQueue<>(1), runnable -> new Thread(runnable, "LangT-engine"),
+            new ThreadPoolExecutor.DiscardOldestPolicy());
     private final File cacheRoot;
 
     LanguageSession(File filesDirectory) {
@@ -28,6 +30,7 @@ final class LanguageSession {
         File selected = new File(version, language);
         AndroidRuleCache.configure(selected);
         checker.warmUp(language);
+        AndroidStartupCache.flush();
         // Keep only the last successfully initialized profile on permanent storage.
         File[] versions = cacheRoot.listFiles();
         if (versions != null) for (File old : versions) if (!old.equals(version)) delete(old);
