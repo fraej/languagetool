@@ -242,7 +242,7 @@ public class OfflineDeviceTest {
     private static void chooseLanguage(String label) {
         onView(withId(R.id.checking_language)).perform(click());
         if (label.equals("Español")) screenshot("language-picker.png");
-        onView(withText(label)).inRoot(isDialog()).perform(click());
+        Espresso.onData(org.hamcrest.Matchers.equalTo(label)).inRoot(isDialog()).perform(click());
     }
 
     @Test public void darkThemePreservesEditorState() {
