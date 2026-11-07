@@ -98,10 +98,13 @@ public final class MainActivity extends AppCompatActivity {
         language.setOnClickListener(view -> chooseLanguage());
         results.setOnClickListener(view -> openCorrections(null));
         checkButton.setOnClickListener(view -> check());
-        editor.setOnClickListener(view -> showCorrectionAt(editor.getSelectionStart()));
+        ((CheckingEditText) editor).setOnWordTapListener(this::showCorrectionAt);
         editor.addTextChangedListener(new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
-            @Override public void onTextChanged(CharSequence s, int start, int before, int count) { invalidate(); }
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
+                // IMEs can resend the same text when focus/composition changes.
+                if (checkedText == null || !checkedText.contentEquals(s)) invalidate();
+            }
             @Override public void afterTextChanged(Editable s) { }
         });
         View use = findViewById(R.id.use_corrected_text);
@@ -347,7 +350,8 @@ public final class MainActivity extends AppCompatActivity {
     }
 
     private boolean isCurrent() {
-        return checkedText != null && checkedText.contentEquals(editor.getText()) && selectedLanguage.equals(checkedLanguage);
+        return !destroyed && checkedText != null && checkedText.contentEquals(editor.getText())
+                && selectedLanguage.equals(checkedLanguage);
     }
 
     private void clearMarks() {

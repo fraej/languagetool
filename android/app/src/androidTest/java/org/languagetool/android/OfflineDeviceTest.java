@@ -203,7 +203,7 @@ public class OfflineDeviceTest {
             screenshot("corrections.png");
             onView(withId(R.id.close_suggestions)).perform(click());
             // Tapping the highlighted word opens its native correction sheet.
-            onView(withId(R.id.editor)).perform(new androidx.test.espresso.action.GeneralClickAction(
+            androidx.test.espresso.action.GeneralClickAction tap = new androidx.test.espresso.action.GeneralClickAction(
                     androidx.test.espresso.action.Tap.SINGLE, view -> {
                         EditText text = (EditText) view;
                         int[] location = new int[2];
@@ -214,7 +214,15 @@ public class OfflineDeviceTest {
                                 + layout.getPrimaryHorizontal(12) - text.getScrollX(),
                                 location[1] + text.getTotalPaddingTop() - text.getScrollY()
                                 + (layout.getLineTop(line) + layout.getLineBottom(line)) / 2f};
-                    }, androidx.test.espresso.action.Press.FINGER));
+                    }, androidx.test.espresso.action.Press.FINGER);
+            onView(withId(R.id.editor)).perform(new androidx.test.espresso.ViewAction() {
+                @Override public org.hamcrest.Matcher<View> getConstraints() { return tap.getConstraints(); }
+                @Override public String getDescription() { return "tap marked word and confirm a single tap"; }
+                @Override public void perform(androidx.test.espresso.UiController controller, View view) {
+                    tap.perform(controller, view);
+                    controller.loopMainThreadForAtLeast(android.view.ViewConfiguration.getDoubleTapTimeout() + 50);
+                }
+            });
             AtomicReference<View> oldSuggestion = new AtomicReference<>();
             onView(withText("spelling")).inRoot(isDialog()).check((view, error) -> {
                 if (error != null) throw error;
