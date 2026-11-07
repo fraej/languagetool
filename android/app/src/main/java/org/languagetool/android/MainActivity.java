@@ -50,18 +50,16 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 
 /** Material editor. LanguageTool checks run on one background worker. */
 public final class MainActivity extends AppCompatActivity {
     private static final int[] LANGUAGE_FLAGS = {R.drawable.flag_us, R.drawable.flag_gb, R.drawable.flag_es,
             R.drawable.flag_ca, R.drawable.flag_valencia, R.drawable.flag_balear};
     private final Handler main = new Handler(Looper.getMainLooper());
-    private final ThreadPoolExecutor worker = new ThreadPoolExecutor(1, 1, 0L,
-            TimeUnit.MILLISECONDS, new ArrayBlockingQueue<>(1), new ThreadPoolExecutor.DiscardOldestPolicy());
-    private final OfflineChecker checker = new OfflineChecker();
+    private LanguageSession session;
+    private ThreadPoolExecutor worker;
+    private OfflineChecker checker;
     private final Runnable delayedCheck = this::check;
     private EditText editor;
     private TextView status, counter;
@@ -73,10 +71,13 @@ public final class MainActivity extends AppCompatActivity {
     private String selectedLanguage, checkedText, checkedLanguage;
     private List<Issue> displayedIssues = Collections.emptyList();
     private long revision;
-    private boolean destroyed, ready;
+    private boolean destroyed;
 
     @Override public void onCreate(Bundle savedState) {
         super.onCreate(savedState);
+        session = ((OfflineApplication) getApplication()).session();
+        worker = session.worker;
+        checker = session.checker;
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         setContentView(R.layout.activity_main);
         View root = findViewById(R.id.editor_root);
@@ -135,6 +136,7 @@ public final class MainActivity extends AppCompatActivity {
         }
         if (editor.length() == 0) invalidate();
         root.requestFocus();
+        prepareLanguage();
     }
 
     @Override public boolean onCreateOptionsMenu(Menu menu) {
@@ -198,6 +200,7 @@ public final class MainActivity extends AppCompatActivity {
                                         .putString("language", selectedLanguage).apply();
                                 updateLanguageLabel();
                                 invalidate();
+                                prepareLanguage();
                             }
                             dialog.dismiss();
                         }).setNegativeButton(android.R.string.cancel, null).show();
@@ -223,14 +226,44 @@ public final class MainActivity extends AppCompatActivity {
         main.removeCallbacks(delayedCheck);
         clearMarks();
         counter.setText(getString(R.string.character_count, editor.length()));
-        progress.setVisibility(View.INVISIBLE);
+        boolean loading = !checker.isReady(selectedLanguage);
+        progress.setVisibility(loading ? View.VISIBLE : View.INVISIBLE);
         boolean empty = editor.getText().toString().trim().isEmpty();
         boolean valid = !empty && editor.length() <= OfflineChecker.MAX_CHARACTERS;
         checkButton.setEnabled(valid);
         status.setText(editor.length() > OfflineChecker.MAX_CHARACTERS ? R.string.too_long
-                : empty ? R.string.empty : R.string.ready);
+                : loading ? R.string.initializing : empty ? R.string.empty : R.string.ready);
         invalidateOptionsMenu();
         if (valid) main.postDelayed(delayedCheck, 700);
+    }
+
+    private void prepareLanguage() {
+        final long ticket = revision;
+        final String requested = selectedLanguage;
+        worker.getQueue().clear();
+        worker.execute(() -> {
+            try {
+                session.warmUp(requested);
+                main.post(() -> {
+                    if (destroyed || revision != ticket) return;
+                    progress.setVisibility(View.INVISIBLE);
+                    if (editor.getText().toString().trim().isEmpty()) status.setText(R.string.empty);
+                    else if (editor.length() <= OfflineChecker.MAX_CHARACTERS) check();
+                });
+            } catch (Exception | LinkageError failure) {
+                reportFailure(ticket, failure);
+            }
+        });
+    }
+
+    private void reportFailure(long ticket, Throwable failure) {
+        // Exceptions can contain submitted text; log only their type.
+        Log.e("LangTAndroid", "Local checker failed: " + failure.getClass().getName());
+        main.post(() -> {
+            if (destroyed || revision != ticket) return;
+            progress.setVisibility(View.INVISIBLE);
+            status.setText(R.string.failed);
+        });
     }
 
     private void check() {
@@ -243,26 +276,20 @@ public final class MainActivity extends AppCompatActivity {
         final long ticket = ++revision;
         final String requested = selectedLanguage;
         progress.setVisibility(View.VISIBLE);
-        status.setText(ready ? R.string.checking : R.string.initializing);
+        status.setText(checker.isReady(requested) ? R.string.checking : R.string.initializing);
         worker.getQueue().clear();
         worker.execute(() -> {
             try {
+                session.warmUp(requested);
                 List<Issue> issues = checker.check(snapshot, requested);
                 main.post(() -> {
                     if (destroyed || revision != ticket) return;
-                    ready = true;
                     checkedText = snapshot;
                     checkedLanguage = requested;
                     showIssues(issues);
                 });
             } catch (Exception | LinkageError failure) {
-                // Exceptions may contain submitted text; log only their type.
-                Log.e("LangTAndroid", "Local checker failed: " + failure.getClass().getName());
-                main.post(() -> {
-                    if (destroyed || revision != ticket) return;
-                    progress.setVisibility(View.INVISIBLE);
-                    status.setText(R.string.failed);
-                });
+                reportFailure(ticket, failure);
             }
         });
     }
@@ -435,7 +462,7 @@ public final class MainActivity extends AppCompatActivity {
         if (auxiliaryDialog != null) auxiliaryDialog.dismiss();
         revision++;
         main.removeCallbacksAndMessages(null);
-        worker.shutdownNow();
+        // The application owns the worker: keeping it preserves the loaded language.
         super.onDestroy();
     }
 }

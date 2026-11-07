@@ -17,6 +17,21 @@ def androidSources = tasks.register('prepareAndroidSources', Sync) {
     bundledLanguages.each { from "../../languagetool-language-modules/${it}/src/main/java" }
     into layout.buildDirectory.dir('generated/sources/languagetool')
     filteringCharset = 'UTF-8'
+    filesMatching('**/PatternRuleLoader.java') {
+        filter { line ->
+            line.replace('PatternRuleHandler handler = new PatternRuleHandler(filename, lang);', 'PatternRuleHandler handler;')
+                .replace('handler.setRelaxedMode(relaxedMode);', '')
+                .replace('SAXParser saxParser = RuleSaxParser.create();', '')
+                .replace('saxParser.parse(is, handler);', 'handler = org.languagetool.offline.AndroidRuleCache.load(is, filename, () -> { PatternRuleHandler fresh = new PatternRuleHandler(filename, lang); fresh.setRelaxedMode(relaxedMode); return fresh; });')
+        }
+    }
+    filesMatching('**/DisambiguationRuleLoader.java') {
+        filter { line ->
+            line.replace('DisambiguationRuleHandler handler = new DisambiguationRuleHandler(language, xmlPath);', 'DisambiguationRuleHandler handler;')
+                .replace('SAXParser saxParser = RuleSaxParser.create();', '')
+                .replace('saxParser.parse(stream, handler);', 'handler = org.languagetool.offline.AndroidRuleCache.load(stream, xmlPath, () -> new DisambiguationRuleHandler(language, xmlPath));')
+        }
+    }
     filter { line ->
         line.replaceAll(/(?<!Collectors)\.toList\(\)/,
                 '.collect(java.util.stream.Collectors.toList())')

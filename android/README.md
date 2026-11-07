@@ -26,6 +26,11 @@ no account, server, first-run download, or `INTERNET` permission.
   Process Text requests, return the corrected text to the calling app.
 - Retain the editor text and language across activity recreation. Text is not
   written to a draft file or included in application logs; backups are disabled.
+- Remember the last-used language and warm it up at app startup, including its
+  dictionaries and tagger. Keep the prepared engine across activity recreation.
+- Store expanded grammar/disambiguation rule data for the last-used profile in
+  private permanent storage, so a new process can bypass XML parsing and entity
+  expansion. Cache checksums detect damage; each app update gets a fresh cache.
 - Bundled open-source notices accessible from About & licenses.
 
 Android 13 (API 33) or later is required. This is an editor, not a keyboard or an
@@ -135,8 +140,17 @@ newest queued check starts.
 This app includes the open-source local English, Spanish, and Catalan engines, not LanguageTool's
 hosted AI services or premium checks. Optional large n-gram datasets are not
 bundled. Other languages need their own resources, dependency review, and device
-tests before being added. Startup time and memory usage vary by device; language
-resources are loaded lazily when first selected for a non-empty check.
+tests before being added. Startup time and memory usage vary by device. The last
+selected language starts loading on application startup, before any user text is
+checked. Returning while the app process is alive reuses that initialized engine.
+After process death, cached SAX data skips XML parsing but the engine must still
+recreate Java rule objects and native regexes and initialize dictionaries. Cold
+startup is not instantaneous. The cache is an optimization, not a saved JVM heap.
+It contains bundled rule data only, never submitted text. Only the last warmed
+profile is retained on disk, and old-version cache data is removed. A failed or
+unwritable cache falls back to bundled XML without disabling language checks.
+XML examples used by upstream rule tests are omitted from the Android cache and
+runtime rule objects; pattern tokens, filters, messages and suggestions are retained.
 Inactive languages' cached XML rule lists are released when switching languages
 or varieties, while shared dictionaries remain available. This Android-only
 adaptation avoids keeping separate large Catalan grammar lists for every variety.

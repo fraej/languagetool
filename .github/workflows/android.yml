@@ -95,7 +95,13 @@ jobs:
             adb shell svc data disable || true
             adb install apks/debug/app-debug.apk
             adb install apks/androidTest/debug/app-debug-androidTest.apk
-            adb shell am instrument -w org.languagetool.android.offline.test/androidx.test.runner.AndroidJUnitRunner | tee device-tests.txt
+            adb shell am instrument -w -e class org.languagetool.android.StartupDeviceTest#saveLastLanguage org.languagetool.android.offline.test/androidx.test.runner.AndroidJUnitRunner | tee startup-save.txt
+            grep -q 'OK (1 test)' startup-save.txt
+            adb shell am force-stop org.languagetool.android.offline
+            adb shell am instrument -w -e class org.languagetool.android.StartupDeviceTest#restoreLastLanguageAfterProcessDeath org.languagetool.android.offline.test/androidx.test.runner.AndroidJUnitRunner | tee startup-restore.txt
+            grep -q 'OK (1 test)' startup-restore.txt
+            adb shell am force-stop org.languagetool.android.offline
+            adb shell am instrument -w -e notClass org.languagetool.android.StartupDeviceTest org.languagetool.android.offline.test/androidx.test.runner.AndroidJUnitRunner | tee device-tests.txt
             mkdir -p screenshots
             for name in editor.png language-picker.png corrections.png dark-editor.png; do adb exec-out run-as org.languagetool.android.offline cat files/screenshots/$name > screenshots/$name; done
             grep -q 'OK (' device-tests.txt
@@ -105,4 +111,6 @@ jobs:
           name: device-results-api-${{ matrix.api }}
           path: |
             device-tests.txt
+            startup-save.txt
+            startup-restore.txt
             screenshots/

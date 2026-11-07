@@ -79,7 +79,7 @@ public class OfflineDeviceTest {
     }
 
     @Test public void grammarAndSpellingFromInstalledApk() throws Exception {
-        OfflineChecker checker = new OfflineChecker();
+        OfflineChecker checker = sharedChecker();
         List<OfflineChecker.Issue> issues = checker.check(
                 "This are a example. I have have a speling mistake.", "en-US");
         assertTrue(issues.stream().anyMatch(issue -> !issue.spelling));
@@ -90,7 +90,7 @@ public class OfflineDeviceTest {
     }
 
     @Test public void unicodeOffsets() throws Exception {
-        OfflineChecker checker = new OfflineChecker();
+        OfflineChecker checker = sharedChecker();
         String text = "Hello 😀.\n\nThis is a speling mistake.";
         OfflineChecker.Issue issue = checker.check(text, "en-US").stream()
                 .filter(match -> match.spelling && match.replacements.contains("spelling"))
@@ -99,7 +99,7 @@ public class OfflineDeviceTest {
     }
 
     @Test public void spanishAndCatalanFromInstalledApk() throws Exception {
-        OfflineChecker checker = new OfflineChecker();
+        OfflineChecker checker = sharedChecker();
         String[][] examples = {
                 {"es", "Una casa bonito. Esto es un errror.", "bonita", "Tiene una canción bonita."},
                 {"ca-ES", "Una casa bonic. Això és un errror.", "bonica", "Aquesta és una pel·lícula bonica."}
@@ -140,7 +140,7 @@ public class OfflineDeviceTest {
     }
 
     @Test public void catalanVarietiesUseDifferentVerbRules() throws Exception {
-        OfflineChecker checker = new OfflineChecker();
+        OfflineChecker checker = sharedChecker();
         assertFalse(checker.check("Jo penso.", "ca-ES").stream()
                 .anyMatch(issue -> issue.ruleId.startsWith("EXIGEIX_VERBS_")));
         assertTrue(checker.check("Jo penso.", "ca-ES-valencia").stream().anyMatch(issue ->
@@ -178,6 +178,27 @@ public class OfflineDeviceTest {
             onView(withId(R.id.check_text)).check(matches(org.hamcrest.Matchers.not(isEnabled())));
             screenshot("editor.png");
         }
+    }
+
+    private static OfflineChecker sharedChecker() throws Exception {
+        OfflineApplication app = (OfflineApplication) InstrumentationRegistry.getInstrumentation().getTargetContext().getApplicationContext();
+        app.session().worker.submit(() -> { }).get(120, java.util.concurrent.TimeUnit.SECONDS);
+        return app.session().checker;
+    }
+
+    @Test public void activityRecreationKeepsThePreparedLanguage() throws Exception {
+        OfflineApplication app = (OfflineApplication) InstrumentationRegistry.getInstrumentation().getTargetContext().getApplicationContext();
+        LanguageSession original = app.session();
+        String language = app.getSharedPreferences("preferences", 0).getString("language", "ca-ES");
+        original.worker.submit(() -> { original.warmUp(language); return null; }).get(120, java.util.concurrent.TimeUnit.SECONDS);
+        long misses = org.languagetool.offline.AndroidRuleCache.misses();
+        try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class)) {
+            scenario.recreate();
+            scenario.onActivity(activity -> assertSame(original, ((OfflineApplication) activity.getApplication()).session()));
+        }
+        original.worker.submit(() -> { }).get(120, java.util.concurrent.TimeUnit.SECONDS);
+        assertTrue(original.checker.isReady(language));
+        assertEquals(misses, org.languagetool.offline.AndroidRuleCache.misses());
     }
 
     @Test public void editorAppliesCorrectionsAndRejectsStaleSuggestions() throws Exception {

@@ -19,8 +19,9 @@ public final class OfflineChecker {
             Arrays.asList("en-US", "en-GB", "es", "ca-ES", "ca-ES-valencia", "ca-ES-balear"));
     private JLanguageTool tool;
     private String dialect;
+    private volatile String warmedDialect;
 
-    public void prepare(String requestedDialect) {
+    public synchronized void prepare(String requestedDialect) {
         if (!SUPPORTED_LANGUAGES.contains(requestedDialect)) {
             throw new IllegalArgumentException("Unsupported dialect: " + requestedDialect);
         }
@@ -35,6 +36,7 @@ public final class OfflineChecker {
         // LanguageTool retains shared dictionaries separately.
         tool = null;
         dialect = null;
+        warmedDialect = null;
         Language requested = Languages.getLanguageForShortCode(requestedDialect);
         for (Language language : Languages.get()) {
             if (language != requested) language.clearAndroidPatternRules();
@@ -44,7 +46,20 @@ public final class OfflineChecker {
         // No remote-rule activation, model download, or language-model directory.
     }
 
-    public List<Issue> check(String text, String requestedDialect) throws IOException {
+    /** Force lazy dictionaries, taggers and disambiguation data to load off the UI thread. */
+    public synchronized void warmUp(String requestedDialect) throws IOException {
+        if (isReady(requestedDialect)) return;
+        String sample = requestedDialect.startsWith("ca") ? "Aquesta és una casa."
+                : requestedDialect.equals("es") ? "Esta es una casa." : "This is a house.";
+        check(sample, requestedDialect);
+        warmedDialect = requestedDialect;
+    }
+
+    public boolean isReady(String requestedDialect) {
+        return requestedDialect.equals(warmedDialect);
+    }
+
+    public synchronized List<Issue> check(String text, String requestedDialect) throws IOException {
         if (text.length() > MAX_CHARACTERS) {
             throw new IllegalArgumentException("Text exceeds " + MAX_CHARACTERS + " characters");
         }
