@@ -8,7 +8,7 @@ android {
 
     defaultConfig {
         applicationId 'org.languagetool.android.offline'
-        minSdk 26
+        minSdk 33
         targetSdk 35
         versionCode 4
         versionName '0.4.0'

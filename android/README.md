@@ -12,8 +12,8 @@ no account, server, first-run download, or `INTERNET` permission.
   grammar, spelling, and conjugation rules.
 - Android Material 3 interface with a standard app bar, full-height text editor,
   language dialog, toolbar actions, and correction bottom sheets.
-- Light and dark themes follow the system. Android 12+ uses the device's dynamic
-  colors; older Android versions use the bundled Material palette.
+- Light and dark themes follow the system, with dynamic device colors where
+  available.
 - Tap a marked word or Suggestions to open corrections. Copy, Paste, Clear,
   examples, and licenses are available in the app bar's menu.
 - Bundled resources for every supported language, with no language-pack downloads.
@@ -27,7 +27,7 @@ no account, server, first-run download, or `INTERNET` permission.
   written to a draft file or included in application logs; backups are disabled.
 - Bundled open-source notices accessible from About & licenses.
 
-Android 8.0 (API 26) or later is required. This is an editor, not a keyboard or an
+Android 13 (API 33) or later is required. This is an editor, not a keyboard or an
 accessibility service. Checking is limited to 10,000 UTF-16 characters at a time;
 longer text remains editable and is never silently truncated. The first 100
 suggestion cards and the first five replacements per issue are displayed.
@@ -71,7 +71,7 @@ interactions, bottom-sheet corrections, dark mode, restored editor state, and
 Spanish/Catalan agreement, accents, and verb forms. CI stores screenshots of the
 editor, language picker, corrections, and dark theme with the device reports.
 
-GitHub Actions builds the APK and runs device tests on API 26 and 35. Build
+GitHub Actions builds the APK and runs device tests on API 33 and 35. Build
 artifacts are available from the workflow run; they are development builds.
 
 ## How the port works
@@ -110,7 +110,7 @@ duplicate legacy JAXB/activation API classes.
 The engine compiles against Android dependency variants, including Android
 Guava. `AndroidSuppliers` bridges its suppliers to Java's supplier interface,
 preserving memoization and avoiding multi-release JAR interface mismatches.
-Stream reading and SHA-256 formatting use APIs available on Android 8.
+Stream reading and SHA-256 formatting use Android-compatible library APIs.
 
 The pinned Morfologik speller is compiled from its Maven source artifact with a
 small decoder fix: check `flush()` before reading the next decoded character.
