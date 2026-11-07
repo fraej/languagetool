@@ -203,13 +203,20 @@ public class OfflineDeviceTest {
             screenshot("corrections.png");
             onView(withId(R.id.close_suggestions)).perform(click());
             // Tapping the highlighted word opens its native correction sheet.
-            scenario.onActivity(activity -> {
-                EditText editor = activity.findViewById(R.id.editor);
-                editor.setSelection(12);
-                editor.performClick();
-            });
+            onView(withId(R.id.editor)).perform(new androidx.test.espresso.action.GeneralClickAction(
+                    androidx.test.espresso.action.Tap.SINGLE, view -> {
+                        EditText text = (EditText) view;
+                        int[] location = new int[2];
+                        text.getLocationOnScreen(location);
+                        android.text.Layout layout = text.getLayout();
+                        int line = layout.getLineForOffset(12);
+                        return new float[]{location[0] + text.getTotalPaddingLeft()
+                                + layout.getPrimaryHorizontal(12) - text.getScrollX(),
+                                location[1] + text.getTotalPaddingTop() - text.getScrollY()
+                                + (layout.getLineTop(line) + layout.getLineBottom(line)) / 2f};
+                    }, androidx.test.espresso.action.Press.FINGER));
             AtomicReference<View> oldSuggestion = new AtomicReference<>();
-            onView(withText("spelling")).check((view, error) -> {
+            onView(withText("spelling")).inRoot(isDialog()).check((view, error) -> {
                 if (error != null) throw error;
                 oldSuggestion.set(view);
             }).perform(click());
@@ -252,6 +259,14 @@ public class OfflineDeviceTest {
     }
 
     private static void screenshot(String name) {
+        // Wait for the dialog/window frame to reach the compositor, including
+        // after configuration changes, rather than capturing its previous frame.
+        InstrumentationRegistry.getInstrumentation().waitForIdleSync();
+        try {
+            InstrumentationRegistry.getInstrumentation().getUiAutomation().waitForIdle(250, 5000);
+        } catch (java.util.concurrent.TimeoutException error) {
+            throw new AssertionError("UI did not settle for screenshot", error);
+        }
         java.io.File folder = new java.io.File(InstrumentationRegistry.getInstrumentation()
                 .getTargetContext().getFilesDir(), "screenshots");
         assertTrue(folder.isDirectory() || folder.mkdirs());

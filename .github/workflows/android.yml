@@ -96,9 +96,9 @@ jobs:
             adb install apks/debug/app-debug.apk
             adb install apks/androidTest/debug/app-debug-androidTest.apk
             adb shell am instrument -w org.languagetool.android.offline.test/androidx.test.runner.AndroidJUnitRunner | tee device-tests.txt
-            grep -q 'OK (' device-tests.txt
             mkdir -p screenshots
             for name in editor.png language-picker.png corrections.png dark-editor.png; do adb exec-out run-as org.languagetool.android.offline cat files/screenshots/$name > screenshots/$name; done
+            grep -q 'OK (' device-tests.txt
       - uses: actions/upload-artifact@v4
         if: always()
         with:
