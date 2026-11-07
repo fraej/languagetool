@@ -1,0 +1,86 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'org.languagetool.android'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'org.languagetool.android.offline'
+        minSdk 26
+        targetSdk 35
+        versionCode 1
+        versionName '0.1.0'
+        testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+        coreLibraryDesugaringEnabled true
+    }
+
+    packaging {
+        resources {
+            excludes += ['META-INF/INDEX.LIST', 'META-INF/DEPENDENCIES',
+                         'META-INF/*.SF', 'META-INF/*.RSA', 'META-INF/*.DSA',
+                         'META-INF/versions/**', 'module-info.class']
+            merges += ['META-INF/services/**', 'META-INF/LICENSE*', 'META-INF/NOTICE*',
+                       'META-INF/AL2.0', 'META-INF/LGPL2.1']
+        }
+    }
+
+    buildTypes {
+        release {
+            // XML rules name classes reflectively. Keep the first release's
+            // engine bytecode and resources intact, just like the tested debug APK.
+            minifyEnabled false
+            shrinkResources false
+        }
+    }
+}
+
+dependencies {
+    implementation project(':engine')
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.5'
+    runtimeOnly 'org.slf4j:slf4j-nop:2.0.16'
+    androidTestImplementation 'androidx.test:runner:1.6.2'
+    androidTestImplementation 'androidx.test.ext:junit:1.2.1'
+    androidTestImplementation 'androidx.test:core:1.6.1'
+}
+
+// Ship the upstream license and the notices embedded in every runtime JAR.
+def generatedNotices = layout.buildDirectory.dir('generated/notices')
+def collectNotices = tasks.register('collectNotices') {
+    inputs.files(configurations.debugRuntimeClasspath)
+    inputs.file('../../COPYING.txt')
+    outputs.dir(generatedNotices)
+    doLast {
+        def output = generatedNotices.get().file('licenses/NOTICES.txt').asFile
+        output.parentFile.mkdirs()
+        output.withWriter('UTF-8') { writer ->
+            writer << 'LanguageTool Offline — open-source notices\n'
+            writer << 'Source and rebuild instructions: https://github.com/fraej/languagetool/tree/master/android\n\n'
+            writer << file('../../COPYING.txt').getText('UTF-8')
+            configurations.debugRuntimeClasspath.resolvedConfiguration.resolvedArtifacts
+                    .sort { it.moduleVersion.id.toString() }.each { artifact ->
+                writer << "\n\n===== ${artifact.moduleVersion.id} =====\n"
+                if (artifact.extension == 'jar') {
+                    new java.util.zip.ZipFile(artifact.file).withCloseable { archive ->
+                        archive.entries().each { entry ->
+                            if (!entry.directory && entry.size < 300_000 &&
+                                    (entry.name ==~ /(?i).*(license|notice|copying|copyright|readme|\.info$).*/)) {
+                                writer << "\n--- ${entry.name} ---\n"
+                                writer << archive.getInputStream(entry).getText('UTF-8')
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+android.sourceSets.main.assets.srcDir(generatedNotices)
+tasks.named('preBuild') { dependsOn collectNotices }

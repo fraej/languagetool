@@ -1,0 +1,92 @@
+plugins {
+    id 'java-library'
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+// Stream.toList() is newer than Android's desugared Java library. Adapt only
+// the Android build, keeping the desktop sources and their API contract intact.
+def androidSources = tasks.register('prepareAndroidSources', Sync) {
+    from '../../languagetool-core/src/main/java'
+    from '../../languagetool-language-modules/en/src/main/java'
+    into layout.buildDirectory.dir('generated/sources/languagetool')
+    filteringCharset = 'UTF-8'
+    filter { line -> line.replaceAll(/(?<!Collectors)\.toList\(\)/,
+            '.collect(java.util.stream.Collectors.toList())') }
+}
+
+// Compile the fork's sources, rather than an unrelated published engine version.
+sourceSets {
+    main {
+        java.srcDirs = ['src/main/java', layout.buildDirectory.dir('generated/sources/languagetool')]
+        resources.srcDirs = ['../../languagetool-core/src/main/resources',
+                             '../../languagetool-language-modules/en/src/main/resources']
+    }
+}
+
+// Reuse the dependency versions and exclusions maintained by the Maven build.
+def parentPom = new XmlSlurper().parse(file('../../pom.xml'))
+def properties = parentPom.properties.children().collectEntries { [(it.name()): it.text()] }
+def expand = { value ->
+    value.replaceAll(/\$\{([^}]+)\}/) { match, key -> properties[key] ?: match }
+}
+def managed = parentPom.dependencyManagement.dependencies.dependency.collectEntries {
+    [("${it.groupId.text()}:${it.artifactId.text()}".toString()): expand(it.version.text())]
+}
+
+dependencies {
+    api platform("io.opentelemetry:opentelemetry-bom:${properties['io.opentelemetry.version']}")
+    [file('../../languagetool-core/pom.xml'),
+     file('../../languagetool-language-modules/en/pom.xml')].each { pomFile ->
+        new XmlSlurper().parse(pomFile).dependencies.dependency.each { dep ->
+            def group = dep.groupId.text()
+            def artifact = dep.artifactId.text()
+            def scope = dep.scope.text()
+            if (scope == 'test' || group == 'org.languagetool' && artifact == 'languagetool-core') {
+                return
+            }
+            // Segment already brings the javax JAXB implementation it needs.
+            // The desktop's Jakarta JAXB 4 runtime is unrelated to that API.
+            if (group == 'org.glassfish.jaxb' && artifact == 'jaxb-runtime') {
+                return
+            }
+            def version = expand(dep.version.text()) ?: managed["${group}:${artifact}".toString()]
+            def configuration = scope == 'provided' || group == 'org.json' ? 'compileOnly' : 'api'
+            add(configuration, version ? "${group}:${artifact}:${version}" : "${group}:${artifact}") {
+                dep.exclusions.exclusion.each { item ->
+                    exclude group: item.groupId.text(), module: item.artifactId.text()
+                }
+            }
+        }
+    }
+    annotationProcessor "org.projectlombok:lombok:${properties['lombok.version']}"
+    // Android's default XML parser does not support the grammar's parameter entities.
+    runtimeOnly('xerces:xercesImpl:2.12.2') {
+        exclude group: 'xml-apis', module: 'xml-apis'
+    }
+    testImplementation 'junit:junit:4.13.2'
+}
+
+configurations.configureEach {
+    // jaxb-impl 2.3.3 already contains these core classes and message bundles.
+    exclude group: 'com.sun.xml.bind', module: 'jaxb-core'
+    // Jakarta's 2.3.x coordinates still contain the javax packages.
+    exclude group: 'jakarta.xml.bind', module: 'jakarta.xml.bind-api'
+    exclude group: 'jakarta.activation', module: 'jakarta.activation-api'
+    exclude group: 'javax.activation', module: 'javax.activation-api'
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}
+
+tasks.named('compileJava') {
+    dependsOn androidSources
+}
+
+tasks.named('processResources') {
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+}

@@ -26,7 +26,7 @@ import org.xml.sax.helpers.DefaultHandler;
 
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
-import javax.xml.parsers.SAXParserFactory;
+import org.languagetool.tools.RuleSaxParser;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
@@ -42,12 +42,7 @@ public class DisambiguationRuleLoader extends DefaultHandler {
   public final List<DisambiguationPatternRule> getRules(InputStream stream, Language language, String xmlPath)
       throws ParserConfigurationException, SAXException, IOException {
     DisambiguationRuleHandler handler = new DisambiguationRuleHandler(language, xmlPath);
-    SAXParserFactory factory = SAXParserFactory.newInstance();
-    SAXParser saxParser = factory.newSAXParser();
-    saxParser.getXMLReader().setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
-    saxParser.getXMLReader().setProperty("jdk.xml.maxGeneralEntitySizeLimit", 0);
-    saxParser.getXMLReader().setProperty("jdk.xml.totalEntitySizeLimit", 0);
-    saxParser.getXMLReader().setProperty("jdk.xml.entityExpansionLimit", 0);
+    SAXParser saxParser = RuleSaxParser.create();
 
     if (JLanguageTool.isCustomPasswordAuthenticatorUsed()) {
       Tools.setPasswordAuthenticator();

@@ -1,5 +1,9 @@
 ## LanguageTool
 
+**Android:** This fork includes a [fully offline Java Android editor](android/README.md)
+with bundled English grammar rules and dictionaries. See its README for builds,
+installation, and device tests.
+
 **LanguageTool** is open-source proofreading software for English, Spanish, French, German,
 Portuguese, Polish, Dutch, and [more than 20 other languages](https://languagetool.org/languages/).
 It finds many errors that a simple spell checker cannot detect.
