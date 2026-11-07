@@ -4,6 +4,7 @@ package org.languagetool.android;
 import org.languagetool.offline.AndroidRuleCache;
 import org.languagetool.offline.AndroidStartupCache;
 import org.languagetool.offline.OfflineChecker;
+import org.languagetool.offline.WrittenLanguageDetector;
 
 import java.io.File;
 import java.io.IOException;
@@ -14,6 +15,7 @@ import java.util.concurrent.TimeUnit;
 /** One engine and one worker per application process, independent of activities. */
 final class LanguageSession {
     final OfflineChecker checker = new OfflineChecker();
+    final WrittenLanguageDetector writtenLanguage = new WrittenLanguageDetector();
     final ThreadPoolExecutor worker = new ThreadPoolExecutor(1, 1, 0L,
             TimeUnit.MILLISECONDS, new ArrayBlockingQueue<>(1), runnable -> new Thread(runnable, "LangT-engine"),
             new ThreadPoolExecutor.DiscardOldestPolicy());

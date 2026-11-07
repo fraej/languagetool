@@ -20,6 +20,15 @@ no account, server, first-run download, or `INTERNET` permission.
 - Bundled resources for every supported language, with no language-pack downloads.
 - Grammar, spelling, punctuation, and style suggestions from the local engine.
 - Automatic checking after a 700 ms typing pause, with an explicit Check button.
+- Warn when text confidently looks like English, Spanish, or Catalan while a
+  different language is selected. Use the detected language with one tap, or
+  Check anyway with the current selection. Text and cursor stay intact.
+- Language detection uses bundled statistical profiles on the background worker.
+  It loads on the first text check, independently of startup warmup, with no
+  server or download. Short/uncertain text keeps the selected language. Detection
+  identifies base languages; switching uses the last chosen English/Catalan
+  variety. Check anyway applies until the text is cleared or a different language
+  is selected.
 - Highlighted error ranges, explanations, and tap-to-apply replacements.
 - Ignore a suggestion for the current results; copy the corrected text.
 - Receive text through Android's Share and Process Text menus. For editable

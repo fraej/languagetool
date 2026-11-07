@@ -311,7 +311,7 @@ public class OfflineDeviceTest {
         }
     }
 
-    private static void screenshot(String name) {
+    static void screenshot(String name) {
         // Wait for the dialog/window frame to reach the compositor, including
         // after configuration changes, rather than capturing its previous frame.
         InstrumentationRegistry.getInstrumentation().waitForIdleSync();

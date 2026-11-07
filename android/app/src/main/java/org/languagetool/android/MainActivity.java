@@ -43,6 +43,7 @@ import com.google.android.material.color.MaterialColors;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import org.languagetool.offline.OfflineChecker;
 import org.languagetool.offline.OfflineChecker.Issue;
+import org.languagetool.offline.WrittenLanguageDetector;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -69,6 +70,8 @@ public final class MainActivity extends AppCompatActivity {
     private BottomSheetDialog correctionSheet;
     private AlertDialog auxiliaryDialog;
     private String selectedLanguage, checkedText, checkedLanguage;
+    private String mismatchText, mismatchLanguage, detectedLanguage;
+    private boolean allowLanguageMismatch;
     private List<Issue> displayedIssues = Collections.emptyList();
     private long revision;
     private boolean destroyed;
@@ -101,10 +104,23 @@ public final class MainActivity extends AppCompatActivity {
                 ? getSharedPreferences("preferences", MODE_PRIVATE).getString("language", "ca-ES")
                 : savedState.getString("language", "ca-ES");
         if (!OfflineChecker.SUPPORTED_LANGUAGES.contains(selectedLanguage)) selectedLanguage = "ca-ES";
+        rememberDialect(selectedLanguage);
+        allowLanguageMismatch = savedState != null && savedState.getBoolean("allowLanguageMismatch", false);
         updateLanguageLabel();
         language.setOnClickListener(view -> chooseLanguage());
-        results.setOnClickListener(view -> openCorrections(null));
-        checkButton.setOnClickListener(view -> check());
+        results.setOnClickListener(view -> {
+            if (hasCurrentMismatch()) selectLanguage(preferredDialect(detectedLanguage));
+            else openCorrections(null);
+        });
+        checkButton.setOnClickListener(view -> {
+            if (hasCurrentMismatch()) {
+                allowLanguageMismatch = true;
+                clearLanguageMismatch();
+                results.setEnabled(false);
+                results.setText(R.string.suggestions);
+            }
+            check();
+        });
         ((CheckingEditText) editor).setOnWordTapListener(this::showCorrectionAt);
         editor.addTextChangedListener(new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
@@ -194,14 +210,7 @@ public final class MainActivity extends AppCompatActivity {
                 .setSingleChoiceItems(choices, OfflineChecker.SUPPORTED_LANGUAGES.indexOf(selectedLanguage),
                         (dialog, which) -> {
                             String requested = OfflineChecker.SUPPORTED_LANGUAGES.get(which);
-                            if (!requested.equals(selectedLanguage)) {
-                                selectedLanguage = requested;
-                                getSharedPreferences("preferences", MODE_PRIVATE).edit()
-                                        .putString("language", selectedLanguage).apply();
-                                updateLanguageLabel();
-                                invalidate();
-                                prepareLanguage();
-                            }
+                            selectLanguage(requested);
                             dialog.dismiss();
                         }).setNegativeButton(android.R.string.cancel, null).show();
     }
@@ -215,8 +224,69 @@ public final class MainActivity extends AppCompatActivity {
         language.setContentDescription(getString(R.string.language_description, label));
     }
 
+    private void selectLanguage(String requested) {
+        if (requested.equals(selectedLanguage)) return;
+        selectedLanguage = requested;
+        allowLanguageMismatch = false;
+        getSharedPreferences("preferences", MODE_PRIVATE).edit().putString("language", requested).apply();
+        rememberDialect(requested);
+        updateLanguageLabel();
+        invalidate();
+        prepareLanguage();
+    }
+
+    private void rememberDialect(String dialect) {
+        getSharedPreferences("preferences", MODE_PRIVATE).edit()
+                .putString("preferred_" + WrittenLanguageDetector.baseLanguage(dialect), dialect).apply();
+    }
+
+    private String preferredDialect(String base) {
+        String fallback = base.equals("en") ? "en-US" : base.equals("ca") ? "ca-ES" : "es";
+        String saved = getSharedPreferences("preferences", MODE_PRIVATE).getString("preferred_" + base, fallback);
+        return OfflineChecker.SUPPORTED_LANGUAGES.contains(saved)
+                && WrittenLanguageDetector.baseLanguage(saved).equals(base) ? saved : fallback;
+    }
+
+    private boolean hasCurrentMismatch() {
+        return mismatchText != null && mismatchText.contentEquals(editor.getText()) && selectedLanguage.equals(mismatchLanguage);
+    }
+
+    private void clearLanguageMismatch() {
+        mismatchText = null;
+        mismatchLanguage = null;
+        detectedLanguage = null;
+        status.setMaxLines(2);
+        ((MaterialButton) checkButton).setText(R.string.check);
+    }
+
+    private void showLanguageMismatch(String text, String requested, String detected) {
+        checkedText = null;
+        checkedLanguage = null;
+        displayedIssues = Collections.emptyList();
+        dismissCorrections();
+        clearMarks();
+        mismatchText = text;
+        mismatchLanguage = requested;
+        detectedLanguage = detected;
+        int nameResource = detected.equals("en") ? R.string.detected_english
+                : detected.equals("es") ? R.string.detected_spanish : R.string.detected_catalan;
+        String name = getString(nameResource);
+        String selectedLabel = getResources().getStringArray(R.array.checking_languages)[OfflineChecker.SUPPORTED_LANGUAGES.indexOf(requested)];
+        progress.setVisibility(View.INVISIBLE);
+        status.setMaxLines(3);
+        status.setText(getString(R.string.language_mismatch, name, selectedLabel));
+        results.setText(getString(R.string.use_detected_language, name));
+        results.setEnabled(true);
+        ((MaterialButton) checkButton).setText(R.string.check_anyway);
+    }
+
+    private boolean requestIsCurrent(long ticket, String text, String requested) {
+        return !destroyed && revision == ticket && requested.equals(selectedLanguage) && text.contentEquals(editor.getText());
+    }
+
     private void invalidate() {
         revision++;
+        clearLanguageMismatch();
         checkedText = null;
         displayedIssues = Collections.emptyList();
         dismissCorrections();
@@ -229,6 +299,7 @@ public final class MainActivity extends AppCompatActivity {
         boolean loading = !checker.isReady(selectedLanguage);
         progress.setVisibility(loading ? View.VISIBLE : View.INVISIBLE);
         boolean empty = editor.getText().toString().trim().isEmpty();
+        if (empty) allowLanguageMismatch = false;
         boolean valid = !empty && editor.length() <= OfflineChecker.MAX_CHARACTERS;
         checkButton.setEnabled(valid);
         status.setText(editor.length() > OfflineChecker.MAX_CHARACTERS ? R.string.too_long
@@ -275,16 +346,25 @@ public final class MainActivity extends AppCompatActivity {
         }
         final long ticket = ++revision;
         final String requested = selectedLanguage;
+        final boolean allowMismatch = allowLanguageMismatch;
         progress.setVisibility(View.VISIBLE);
         status.setText(checker.isReady(requested) ? R.string.checking : R.string.initializing);
         worker.getQueue().clear();
         worker.execute(() -> {
             try {
+                String detected = allowMismatch ? null : session.writtenLanguage.mismatch(snapshot, requested);
+                if (detected != null) {
+                    main.post(() -> {
+                        if (requestIsCurrent(ticket, snapshot, requested)) showLanguageMismatch(snapshot, requested, detected);
+                    });
+                    return;
+                }
                 session.warmUp(requested);
                 List<Issue> issues = checker.check(snapshot, requested);
                 org.languagetool.offline.AndroidStartupCache.flush();
                 main.post(() -> {
-                    if (destroyed || revision != ticket) return;
+                    if (!requestIsCurrent(ticket, snapshot, requested)) return;
+                    clearLanguageMismatch();
                     checkedText = snapshot;
                     checkedLanguage = requested;
                     showIssues(issues);
@@ -453,6 +533,7 @@ public final class MainActivity extends AppCompatActivity {
     @Override protected void onSaveInstanceState(Bundle state) {
         state.putString("text", editor.getText().toString());
         state.putString("language", selectedLanguage);
+        state.putBoolean("allowLanguageMismatch", allowLanguageMismatch);
         state.putInt("selection", Math.max(0, editor.getSelectionStart()));
         super.onSaveInstanceState(state);
     }

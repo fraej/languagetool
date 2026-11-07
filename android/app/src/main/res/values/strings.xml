@@ -21,6 +21,12 @@
     <string name="empty">Ready</string>
     <string name="no_issues">All clear</string>
     <string name="check">Check</string>
+    <string name="check_anyway">Check anyway</string>
+    <string name="language_mismatch">This text looks like %1$s, but %2$s is selected.</string>
+    <string name="use_detected_language">Use %1$s</string>
+    <string name="detected_english">English</string>
+    <string name="detected_spanish">Español</string>
+    <string name="detected_catalan">Català</string>
     <string name="copy">Copy all</string>
     <string name="sample">Try an example</string>
     <string name="about">About &amp; licenses</string>
