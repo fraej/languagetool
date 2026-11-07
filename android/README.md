@@ -126,6 +126,9 @@ hosted AI services or premium checks. Optional large n-gram datasets are not
 bundled. Other languages need their own resources, dependency review, and device
 tests before being added. Startup time and memory usage vary by device; language
 resources are loaded lazily when first selected for a non-empty check.
+The application requests Android's larger heap allowance for the bundled NLP
+models and rule caches. The multilingual engine can exceed a device's ordinary
+192 MB app heap; its available memory still depends on the device.
 
 The UI and port code are LGPL 2.1 or later, like the engine. Bundled resources and
 dependencies retain their own licenses and notices. Full source and build

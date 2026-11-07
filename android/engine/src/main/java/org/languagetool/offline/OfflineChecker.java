@@ -30,6 +30,10 @@ public final class OfflineChecker {
         // loaders select it explicitly in the generated compatibility sources.
         System.setProperty("javax.xml.parsers.SAXParserFactory",
                 "org.apache.xerces.jaxp.SAXParserFactoryImpl");
+        // Drop the previous checker's Java rules before loading the next one.
+        // LanguageTool retains shared dictionaries and XML rules separately.
+        tool = null;
+        dialect = null;
         tool = new JLanguageTool(Languages.getLanguageForShortCode(requestedDialect));
         dialect = requestedDialect;
         // No remote-rule activation, model download, or language-model directory.
