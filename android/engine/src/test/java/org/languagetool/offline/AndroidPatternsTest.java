@@ -24,5 +24,20 @@ public class AndroidPatternsTest {
         assertTrue(AndroidPatterns.matches(Pattern.quote(literal), literal));
         assertEquals("\\(\\?U\\)", AndroidPatterns.normalize("\\(\\?U\\)"));
         assertTrue(AndroidPatterns.compile(literal, Pattern.LITERAL).matcher(literal).matches());
+        assertTrue(AndroidPatterns.matches("[(?)]", "("));
+    }
+
+    @Test public void preservesJavaUndefinedNumericReferenceAlternatives() {
+        Pattern pattern = Pattern.compile(AndroidPatterns.numericReferences("\\1|word", 0));
+        assertTrue(pattern.matcher("word").matches());
+        assertFalse(pattern.matcher("anything").matches());
+        assertFalse(pattern.matcher("").matches());
+    }
+
+    @Test public void preservesJavaNumericReferenceDigitTruncation() {
+        Pattern pattern = Pattern.compile(AndroidPatterns.numericReferences("(a)\\12", 0));
+        assertTrue(pattern.matcher("aa2").matches());
+        assertFalse(pattern.matcher("aa").matches());
+        assertEquals("\\Q\\12\\E", AndroidPatterns.numericReferences("\\Q\\12\\E", 0));
     }
 }

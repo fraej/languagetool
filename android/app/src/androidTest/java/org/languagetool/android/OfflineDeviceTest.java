@@ -8,6 +8,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import org.languagetool.offline.OfflineChecker;
+import org.languagetool.offline.AndroidPatterns;
 
 import java.util.Arrays;
 import java.util.List;
@@ -22,6 +23,17 @@ import static org.junit.Assert.*;
 /** Runs against the installed APK, using Android's actual runtime and bundled assets. */
 @RunWith(AndroidJUnit4.class)
 public class OfflineDeviceTest {
+    @Test public void javaRegexCompatibility() {
+        assertTrue(AndroidPatterns.matches("(?)id", "id"));
+        assertTrue(AndroidPatterns.matches("\\p{IsPunctuation}", "!"));
+        assertTrue(AndroidPatterns.compile("(?iU:example)", 256).matcher("EXAMPLE").matches());
+        assertTrue(AndroidPatterns.matches("[(?)]", "("));
+        assertTrue(AndroidPatterns.matches("\\1|word", "word"));
+        assertFalse(AndroidPatterns.matches("\\1|word", "anything"));
+        assertTrue(AndroidPatterns.matches("(a)\\12", "aa2"));
+        assertTrue(AndroidPatterns.matches(java.util.regex.Pattern.quote("(?U)"), "(?U)"));
+    }
+
     @Test public void noNetworkPermission() throws Exception {
         android.content.Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
         PackageInfo info = context.getPackageManager().getPackageInfo(context.getPackageName(),

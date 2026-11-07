@@ -72,8 +72,10 @@ The desktop sources retain their original stream behavior.
 The Android sources route regex compilation through `AndroidPatterns`, which
 uses ICU's equivalent Unicode punctuation category, omits Java's Unicode
 character-class switch, and removes Java's empty flag group from grammar XML.
-Android already uses Unicode character classes. Quoted and literal expressions
-are preserved, and unsupported regexes still fail explicitly.
+Android already uses Unicode character classes. Java's permissive numeric
+backreferences are converted to equivalent ICU expressions, preserving valid
+alternatives and trailing literal digits. Quoted and literal expressions are
+preserved, and other unsupported regexes still fail explicitly.
 
 Android's platform XML parser does not support the parameter entities used by
 the grammar files. The Android build explicitly selects bundled Xerces in the
