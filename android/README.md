@@ -8,12 +8,14 @@ no account, server, first-run download, or `INTERNET` permission.
 ## Features
 
 - English (US/UK), Spanish, and all three Catalan engine varieties: General,
-  Valencià, and Balear. The Catalan variety buttons select each variety's actual
+  Valencià, and Balear. The language picker selects each variety's actual
   grammar, spelling, and conjugation rules.
-- Native editor styled after [fraej/webui-languagetool](https://github.com/fraej/webui-languagetool),
-  with a purple gradient, white editor card, variety pills, and compact suggestions.
-- Separate spelling, grammar, and style colors and counts; tap a marked word to
-  open its corrections. Copy, Clear, and licenses are under More options.
+- Android Material 3 interface with a standard app bar, full-height text editor,
+  language dialog, toolbar actions, and correction bottom sheets.
+- Light and dark themes follow the system. Android 12+ uses the device's dynamic
+  colors; older Android versions use the bundled Material palette.
+- Tap a marked word or Suggestions to open corrections. Copy, Paste, Clear,
+  examples, and licenses are available in the app bar's menu.
 - Bundled resources for every supported language, with no language-pack downloads.
 - Grammar, spelling, punctuation, and style suggestions from the local engine.
 - Automatic checking after a 700 ms typing pause, with an explicit Check button.
@@ -64,8 +66,10 @@ Device tests exercise the installed engine and packaged resources, verify the
 absence of `INTERNET`, and check grammar, spelling, language switching, and UTF-16
 offsets after emoji and newlines. Enable airplane mode before first launch and
 use **Try an example** to verify the same behavior manually.
-The example follows the selected language. Spanish and Catalan tests also check
-adjective agreement, accented words, and restored language selection.
+The example follows the selected language. Tests cover native language/menu
+interactions, bottom-sheet corrections, dark mode, restored editor state, and
+Spanish/Catalan agreement, accents, and verb forms. CI stores screenshots of the
+editor, language picker, corrections, and dark theme with the device reports.
 
 GitHub Actions builds the APK and runs device tests on API 26 and 35. Build
 artifacts are available from the workflow run; they are development builds.

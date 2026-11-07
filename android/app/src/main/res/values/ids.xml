@@ -6,12 +6,6 @@
     <item name="suggestions" type="id" />
     <item name="checking_language" type="id" />
     <item name="use_example" type="id" />
-    <item name="catalan_variety" type="id" />
-    <item name="catalan_general" type="id" />
-    <item name="catalan_valencian" type="id" />
-    <item name="catalan_balearic" type="id" />
-    <item name="more_options" type="id" />
-    <item name="options_panel" type="id" />
     <item name="copy_text" type="id" />
     <item name="clear_text" type="id" />
 </resources>

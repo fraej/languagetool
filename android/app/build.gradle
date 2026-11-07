@@ -10,8 +10,8 @@ android {
         applicationId 'org.languagetool.android.offline'
         minSdk 26
         targetSdk 35
-        versionCode 3
-        versionName '0.3.0'
+        versionCode 4
+        versionName '0.4.0'
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
     }
 
@@ -43,11 +43,20 @@ android {
 
 dependencies {
     implementation project(':engine')
+    implementation 'androidx.appcompat:appcompat:1.7.0'
+    implementation 'com.google.android.material:material:1.12.0'
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.5'
     runtimeOnly 'org.slf4j:slf4j-nop:2.0.16'
     androidTestImplementation 'androidx.test:runner:1.6.2'
     androidTestImplementation 'androidx.test.ext:junit:1.2.1'
     androidTestImplementation 'androidx.test:core:1.6.1'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.6.1'
+}
+
+configurations.configureEach {
+    // AndroidX supplies JetBrains annotations; the desktop engine's old copy
+    // uses a second Maven coordinate for the same annotation classes.
+    exclude group: 'com.intellij', module: 'annotations'
 }
 
 // Ship the upstream license and the notices embedded in every runtime JAR.
@@ -56,6 +65,7 @@ def noticeConfigurations = { [configurations.debugRuntimeClasspath, configuratio
 def collectNotices = tasks.register('collectNotices') {
     inputs.files(provider { noticeConfigurations() })
     inputs.file('../../COPYING.txt')
+    inputs.file('src/main/notices/android-ui.txt')
     outputs.dir(generatedNotices)
     doLast {
         def output = generatedNotices.get().file('licenses/NOTICES.txt').asFile
@@ -64,11 +74,12 @@ def collectNotices = tasks.register('collectNotices') {
             writer << 'LanguageTool Offline — open-source notices\n'
             writer << 'Source and rebuild instructions: https://github.com/fraej/languagetool\n\n'
             writer << file('../../COPYING.txt').getText('UTF-8')
+            writer << '\n\n' << file('src/main/notices/android-ui.txt').getText('UTF-8')
             noticeConfigurations().collectMany { it.resolvedConfiguration.resolvedArtifacts.toList() }
                     .unique { it.moduleVersion.id.toString() }
                     .sort { it.moduleVersion.id.toString() }.each { artifact ->
                 writer << "\n\n===== ${artifact.moduleVersion.id} =====\n"
-                if (artifact.extension == 'jar') {
+                if (artifact.extension in ['jar', 'aar']) {
                     new java.util.zip.ZipFile(artifact.file).withCloseable { archive ->
                         archive.entries().each { entry ->
                             if (!entry.directory && entry.size < 300_000 &&

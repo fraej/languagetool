@@ -15,11 +15,14 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import android.view.View;
-import android.view.ViewGroup;
-import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
-import android.widget.Spinner;
+import androidx.test.espresso.Espresso;
+import static androidx.test.espresso.Espresso.onView;
+import static androidx.test.espresso.action.ViewActions.click;
+import static androidx.test.espresso.assertion.ViewAssertions.matches;
+import static androidx.test.espresso.matcher.ViewMatchers.*;
+import static androidx.test.espresso.matcher.RootMatchers.isDialog;
 import static org.junit.Assert.*;
 
 /** Runs against the installed APK, using Android's actual runtime and bundled assets. */
@@ -122,16 +125,13 @@ public class OfflineDeviceTest {
 
     @Test public void languageSelectionAndExamplesSurviveRecreation() {
         try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class)) {
-            for (int position : new int[]{2, 3}) {
-                scenario.onActivity(activity -> {
-                    ((Spinner) activity.findViewById(R.id.checking_language)).setSelection(position);
-                    activity.findViewById(R.id.use_example).performClick();
-                });
+            for (String label : new String[]{"Español", "Català · General"}) {
+                chooseLanguage(label);
+                menuAction(R.string.sample);
                 scenario.recreate();
+                onView(withId(R.id.checking_language)).check(matches(withText(label)));
                 scenario.onActivity(activity -> {
-                    assertEquals(position, ((Spinner) activity.findViewById(R.id.checking_language))
-                            .getSelectedItemPosition());
-                    assertEquals(activity.getString(position == 2 ? R.string.sample_spanish : R.string.sample_catalan),
+                    assertEquals(activity.getString(label.equals("Español") ? R.string.sample_spanish : R.string.sample_catalan),
                             ((EditText) activity.findViewById(R.id.editor)).getText().toString());
                     ((EditText) activity.findViewById(R.id.editor)).setText("");
                 });
@@ -157,72 +157,117 @@ public class OfflineDeviceTest {
         }
     }
 
-    @Test public void varietyPillsAndOptionsWorkAfterRecreation() {
+    @Test public void nativeLanguageDialogAndToolbarMenuWorkAfterRecreation() {
         try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class)) {
-            for (int id : new int[]{R.id.catalan_general, R.id.catalan_valencian, R.id.catalan_balearic}) {
-                scenario.onActivity(activity -> {
-                    ((Spinner) activity.findViewById(R.id.checking_language)).setSelection(3);
-                    activity.findViewById(id).performClick();
-                    activity.findViewById(R.id.use_example).performClick();
-                });
+            for (String label : new String[]{"Català · General", "Català · Valencià", "Català · Balear"}) {
+                chooseLanguage(label);
+                menuAction(R.string.sample);
                 scenario.recreate();
+                onView(withId(R.id.checking_language)).check(matches(withText(label)));
                 scenario.onActivity(activity -> {
-                    assertTrue(((android.widget.RadioButton) activity.findViewById(id)).isChecked());
-                    int example = id == R.id.catalan_valencian ? R.string.sample_valencian
-                            : id == R.id.catalan_balearic ? R.string.sample_balearic : R.string.sample_catalan;
+                    int example = label.endsWith("Valencià") ? R.string.sample_valencian
+                            : label.endsWith("Balear") ? R.string.sample_balearic : R.string.sample_catalan;
                     assertEquals(activity.getString(example), ((EditText) activity.findViewById(R.id.editor))
                             .getText().toString());
                     ((EditText) activity.findViewById(R.id.editor)).setText("");
                 });
             }
-            scenario.onActivity(activity -> {
-                activity.findViewById(R.id.more_options).performClick();
-                assertEquals(View.VISIBLE, activity.findViewById(R.id.options_panel).getVisibility());
-                ((EditText) activity.findViewById(R.id.editor)).setText("Clear this text.");
-                activity.findViewById(R.id.clear_text).performClick();
-                assertEquals("", ((EditText) activity.findViewById(R.id.editor)).getText().toString());
-            });
+            scenario.onActivity(activity -> ((EditText) activity.findViewById(R.id.editor)).setText("Clear this text."));
+            menuAction(R.string.clear);
+            onView(withId(R.id.editor)).check(matches(withText("")));
+            onView(withId(R.id.check_text)).check(matches(org.hamcrest.Matchers.not(isEnabled())));
+            screenshot("editor.png");
         }
     }
 
     @Test public void editorAppliesCorrectionsAndRejectsStaleSuggestions() throws Exception {
         try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class)) {
+            chooseLanguage("English (US)");
             scenario.onActivity(activity -> {
-                ((Spinner) activity.findViewById(R.id.checking_language)).setSelection(0);
                 ((EditText) activity.findViewById(R.id.editor)).setText("This is a speling mistake.");
                 activity.findViewById(R.id.check_text).performClick();
             });
-            AtomicReference<Button> suggestion = new AtomicReference<>();
+            java.util.concurrent.atomic.AtomicBoolean available = new java.util.concurrent.atomic.AtomicBoolean();
             long deadline = android.os.SystemClock.uptimeMillis() + 180_000;
-            while (suggestion.get() == null && android.os.SystemClock.uptimeMillis() < deadline) {
+            while (!available.get() && android.os.SystemClock.uptimeMillis() < deadline) {
                 scenario.onActivity(activity -> {
                     assertFalse("Android checker reported a runtime error", activity.getString(R.string.failed)
                             .contentEquals(((TextView) activity.findViewById(R.id.check_status)).getText()));
-                    suggestion.set(findButton(activity.findViewById(R.id.suggestions), "spelling"));
+                    available.set(activity.findViewById(R.id.show_suggestions).isEnabled());
                 });
-                if (suggestion.get() == null) Thread.sleep(100);
+                if (!available.get()) Thread.sleep(100);
             }
-            assertNotNull("No spelling correction appeared in the editor", suggestion.get());
+            assertTrue("No corrections available", available.get());
+            onView(withId(R.id.show_suggestions)).perform(click());
+            onView(withId(R.id.sheet_title)).check(matches(withText(R.string.suggestions)));
+            screenshot("corrections.png");
+            onView(withId(R.id.close_suggestions)).perform(click());
+            // Tapping the highlighted word opens its native correction sheet.
             scenario.onActivity(activity -> {
-                suggestion.get().performClick();
+                EditText editor = activity.findViewById(R.id.editor);
+                editor.setSelection(12);
+                editor.performClick();
+            });
+            AtomicReference<View> oldSuggestion = new AtomicReference<>();
+            onView(withText("spelling")).check((view, error) -> {
+                if (error != null) throw error;
+                oldSuggestion.set(view);
+            }).perform(click());
+            scenario.onActivity(activity -> {
                 EditText editor = activity.findViewById(R.id.editor);
                 assertEquals("This is a spelling mistake.", editor.getText().toString());
                 editor.setText("Completely different.");
-                suggestion.get().performClick();
+                oldSuggestion.get().performClick();
                 assertEquals("Completely different.", editor.getText().toString());
+                editor.setText("");
             });
         }
     }
 
-    private static Button findButton(View view, String label) {
-        if (view instanceof Button && label.contentEquals(((Button) view).getText())) return (Button) view;
-        if (view instanceof ViewGroup) {
-            ViewGroup group = (ViewGroup) view;
-            for (int i = 0; i < group.getChildCount(); i++) {
-                Button found = findButton(group.getChildAt(i), label);
-                if (found != null) return found;
-            }
+    private static void chooseLanguage(String label) {
+        onView(withId(R.id.checking_language)).perform(click());
+        if (label.equals("Español")) screenshot("language-picker.png");
+        onView(withText(label)).inRoot(isDialog()).perform(click());
+    }
+
+    @Test public void darkThemePreservesEditorState() {
+        InstrumentationRegistry.getInstrumentation().runOnMainSync(() ->
+                androidx.appcompat.app.AppCompatDelegate.setDefaultNightMode(
+                        androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_YES));
+        try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class)) {
+            scenario.onActivity(activity -> ((EditText) activity.findViewById(R.id.editor)).setText("Saved draft."));
+            scenario.recreate();
+            scenario.onActivity(activity -> {
+                assertEquals(android.content.res.Configuration.UI_MODE_NIGHT_YES,
+                        activity.getResources().getConfiguration().uiMode & android.content.res.Configuration.UI_MODE_NIGHT_MASK);
+                assertEquals("Saved draft.", ((EditText) activity.findViewById(R.id.editor)).getText().toString());
+                ((EditText) activity.findViewById(R.id.editor)).setText("");
+            });
+            screenshot("dark-editor.png");
+        } finally {
+            InstrumentationRegistry.getInstrumentation().runOnMainSync(() ->
+                    androidx.appcompat.app.AppCompatDelegate.setDefaultNightMode(
+                            androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM));
         }
-        return null;
+    }
+
+    private static void screenshot(String name) {
+        java.io.File folder = new java.io.File(InstrumentationRegistry.getInstrumentation()
+                .getTargetContext().getFilesDir(), "screenshots");
+        assertTrue(folder.isDirectory() || folder.mkdirs());
+        android.graphics.Bitmap bitmap = InstrumentationRegistry.getInstrumentation().getUiAutomation().takeScreenshot();
+        assertNotNull(bitmap);
+        try (java.io.FileOutputStream output = new java.io.FileOutputStream(new java.io.File(folder, name))) {
+            assertTrue(bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, output));
+        } catch (java.io.IOException error) {
+            throw new AssertionError("Could not save UI screenshot", error);
+        } finally {
+            bitmap.recycle();
+        }
+    }
+
+    private static void menuAction(int title) {
+        Espresso.openActionBarOverflowOrOptionsMenu(InstrumentationRegistry.getInstrumentation().getTargetContext());
+        onView(withText(title)).perform(click());
     }
 }
