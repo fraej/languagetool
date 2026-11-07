@@ -51,8 +51,11 @@ public final class OfflineChecker {
         if (isReady(requestedDialect)) return;
         String sample = requestedDialect.startsWith("ca") ? "Aquesta és una casa."
                 : requestedDialect.equals("es") ? "Esta es una casa." : "This is a house.";
-        check(sample, requestedDialect);
-        warmedDialect = requestedDialect;
+        AndroidInterning.begin();
+        try {
+            check(sample, requestedDialect);
+            warmedDialect = requestedDialect;
+        } finally { AndroidInterning.end(); }
     }
 
     public boolean isReady(String requestedDialect) {

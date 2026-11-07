@@ -17,6 +17,9 @@ def androidSources = tasks.register('prepareAndroidSources', Sync) {
     bundledLanguages.each { from "../../languagetool-language-modules/${it}/src/main/java" }
     into layout.buildDirectory.dir('generated/sources/languagetool')
     filteringCharset = 'UTF-8'
+    filesMatching('**/StringInterner.java') {
+        filter { line -> line.replace('return interner.intern(string);', 'return org.languagetool.offline.AndroidInterning.intern(string, interner);') }
+    }
     filesMatching('**/MorfologikMultiSpeller.java') {
         filter { line ->
             line.replace('String cacheKey = dictPath + "|" + infoPath;', 'String cacheKey = dictPath + "|" + infoPath + "|" + (language == null ? "" : language.getShortCodeWithCountryAndVariant());')

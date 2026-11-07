@@ -152,8 +152,12 @@ recreate Java rule objects and native regexes. Compiled supplemental dictionarie
 POS-pattern intersections, and prepared multiword maps also persist, avoiding
 dictionary FSA compilation, repeated POS scans, and multiword expansion. Cold
 startup is not instantaneous. The cache is an optimization, not a saved JVM heap.
+During warmup, a temporary thread-local map avoids repeated weak-interner lookups
+while preserving existing canonical string identities. It is released after
+initialization, including failures; normal text checks retain the weak interner.
 It contains bundled rule data only, never submitted text. Only the last warmed
-profile is retained on disk, and old-version cache data is removed. A failed or
+grammar profile is retained on disk; computed data shared by the bundled profiles
+is retained across switches. Old-version cache data is removed. A failed or
 unwritable cache falls back to bundled XML without disabling language checks.
 XML examples used by upstream rule tests are omitted from the Android cache and
 runtime rule objects; pattern tokens, filters, messages and suggestions are retained.

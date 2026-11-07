@@ -23,7 +23,9 @@ public class StartupDeviceTest {
         session.worker.submit(() -> { session.warmUp("ca-ES-valencia"); return null; }).get(120, TimeUnit.SECONDS);
         assertTrue(session.checker.isReady("ca-ES-valencia"));
         File version = new File(app.getFilesDir(), "language-rules/v" + BuildConfig.VERSION_CODE + "-1");
-        assertArrayEquals(new String[]{"ca-ES-valencia"}, version.list());
+        String[] stored = version.list();
+        assertNotNull(stored); java.util.Arrays.sort(stored);
+        assertArrayEquals(new String[]{"ca-ES-valencia", "computed"}, stored);
         File[] rules = new File(version, "ca-ES-valencia").listFiles((dir, name) -> name.endsWith(".rules"));
         assertNotNull(rules);
         assertTrue(rules.length > 0);

@@ -28,15 +28,18 @@ final class LanguageSession {
         if (checker.isReady(language)) return;
         File version = new File(cacheRoot, "v" + BuildConfig.VERSION_CODE + "-1");
         File selected = new File(version, language);
-        AndroidRuleCache.configure(selected);
+        File computed = new File(version, "computed");
+        AndroidRuleCache.configure(selected, computed);
         checker.warmUp(language);
         AndroidStartupCache.flush();
         // Keep only the last successfully initialized profile on permanent storage.
         File[] versions = cacheRoot.listFiles();
         if (versions != null) for (File old : versions) if (!old.equals(version)) delete(old);
         File[] languages = version.listFiles();
-        if (languages != null) for (File old : languages) if (!old.equals(selected)) delete(old);
+        if (languages != null) for (File old : languages) if (!old.equals(selected) && !old.equals(computed)) delete(old);
         File[] files = selected.listFiles();
+        if (files != null) for (File old : files) if (old.getName().endsWith(".tmp")) old.delete();
+        files = computed.listFiles();
         if (files != null) for (File old : files) if (old.getName().endsWith(".tmp")) old.delete();
     }
 

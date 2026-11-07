@@ -36,6 +36,7 @@ public final class AndroidRuleCache {
     private static final int HEADER = 40;
     private static final long MAX_BYTES = 128L * 1024 * 1024;
     private static volatile File directory;
+    private static volatile File computedDirectory;
     private static final AtomicLong hits = new AtomicLong();
     private static final AtomicLong misses = new AtomicLong();
 
@@ -43,14 +44,19 @@ public final class AndroidRuleCache {
 
     /** Caller supplies an app-version-specific directory, invalidating old rules. */
     public static void configure(File versionDirectory) {
+        configure(versionDirectory, versionDirectory);
+    }
+
+    public static void configure(File versionDirectory, File sharedComputedDirectory) {
         directory = versionDirectory;
+        computedDirectory = sharedComputedDirectory;
         AndroidStartupCache.configure();
     }
 
     static boolean enabled() { return directory != null; }
 
     private static File dataFile(String key) {
-        File root = directory;
+        File root = computedDirectory;
         return root == null ? null : new File(root, hex(digest().digest(key.getBytes(StandardCharsets.UTF_8))) + ".data");
     }
 

@@ -66,6 +66,27 @@ public class AndroidStartupCacheTest {
         assertEquals(Set.of("fixed"), AndroidStartupCache.postags("NC.*", true, Set.of("NC"), () -> Set.of("fixed")));
     }
 
+    @Test public void computedDataSurvivesSwitchingAndRemovingThePreviousGrammarProfile() throws Exception {
+        File version = temporary.newFolder(), general = new File(version, "ca-ES"), valencian = new File(version, "ca-ES-valencia");
+        File common = new File(version, "computed");
+        assertTrue(general.mkdir());
+        AndroidRuleCache.configure(general, common);
+        AndroidStartupCache.postags("NC.*", true, Set.of("NC"), () -> Set.of("NC"));
+        AndroidStartupCache.flush();
+        AndroidStartupCache.saveChunker("shared-ca", Map.of("Sant", 2), Map.of(),
+                Map.of("Sant Feliu", new AnalyzedToken("Sant Feliu", "NPCN000", "sant feliu")), Map.of());
+        AndroidRuleCache.configure(valencian, common);
+        assertTrue(general.delete());
+        assertEquals(Set.of("NC"), AndroidStartupCache.postags("NC.*", true, Set.of("NC"), () -> {
+            throw new AssertionError("Switching variety must retain shared POS data");
+        }));
+        Map<String, Integer> starts = new HashMap<>();
+        Map<String, AnalyzedToken> full = new HashMap<>();
+        assertTrue(AndroidStartupCache.chunker("shared-ca", starts, new HashMap<>(), full, new HashMap<>()));
+        assertEquals(Integer.valueOf(2), starts.get("Sant"));
+        assertEquals("sant feliu", full.get("Sant Feliu").getLemma());
+    }
+
     @Test public void restoresCompiledSpellingAutomatonAndRejectsInvalidBinaryData() throws Exception {
         AndroidRuleCache.configure(temporary.newFolder());
         java.util.List<byte[]> words = new java.util.ArrayList<>();
