@@ -24,8 +24,8 @@ public final class OfflineChecker {
         if (tool != null && requestedDialect.equals(dialect)) {
             return;
         }
-        // Select the parser before loading any language resources. The APK bundles
-        // Xerces; this also makes the desktop integration tests use the same parser.
+        // Desktop integration tests also use the bundled parser. Android rule
+        // loaders select it explicitly in the generated compatibility sources.
         System.setProperty("javax.xml.parsers.SAXParserFactory",
                 "org.apache.xerces.jaxp.SAXParserFactoryImpl");
         tool = new JLanguageTool("en-GB".equals(requestedDialect)

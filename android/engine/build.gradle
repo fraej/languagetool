@@ -10,12 +10,29 @@ java {
 // Stream.toList() is newer than Android's desugared Java library. Adapt only
 // the Android build, keeping the desktop sources and their API contract intact.
 def androidSources = tasks.register('prepareAndroidSources', Sync) {
+    inputs.file('build.gradle')
     from '../../languagetool-core/src/main/java'
     from '../../languagetool-language-modules/en/src/main/java'
     into layout.buildDirectory.dir('generated/sources/languagetool')
     filteringCharset = 'UTF-8'
-    filter { line -> line.replaceAll(/(?<!Collectors)\.toList\(\)/,
-            '.collect(java.util.stream.Collectors.toList())') }
+    filter { line ->
+        line.replaceAll(/(?<!Collectors)\.toList\(\)/,
+                '.collect(java.util.stream.Collectors.toList())')
+            // Android's JAXP lookup ignores the desktop factory system property.
+            .replace('SAXParserFactory.newInstance()',
+                'SAXParserFactory.newInstance("org.apache.xerces.jaxp.SAXParserFactoryImpl", org.languagetool.tools.RuleSaxParser.class.getClassLoader())')
+            // Segment uses Android's factory internally, which cannot attach XSD
+            // schemas. The packaged SRX is trusted and tested at build time.
+            .replace('Map.of(Srx2SaxParser.VALIDATE_PARAMETER, true)',
+                'Map.of(Srx2SaxParser.VALIDATE_PARAMETER, false)')
+            .replace('Pattern.UNICODE_CHARACTER_CLASS', '0')
+            .replaceAll(/\bPattern\.compile\(/, 'org.languagetool.offline.AndroidPatterns.compile(')
+            .replaceAll(/\bPattern\.matches\(/, 'org.languagetool.offline.AndroidPatterns.matches(')
+            .replace('import static java.util.regex.Pattern.compile;',
+                'import static org.languagetool.offline.AndroidPatterns.compile;')
+            .replace('import static java.util.regex.Pattern.*;',
+                'import static java.util.regex.Pattern.*;\nimport static org.languagetool.offline.AndroidPatterns.compile;\nimport static org.languagetool.offline.AndroidPatterns.matches;')
+    }
 }
 
 // Compile the fork's sources, rather than an unrelated published engine version.

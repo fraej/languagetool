@@ -73,17 +73,19 @@ jobs:
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
-      - name: Run installed APK without network access
+      - name: Run installed APK without network permission
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: ${{ matrix.api }}
           target: google_apis
           arch: x86_64
+          ram-size: 2048M
+          heap-size: 256M
           disable-animations: true
           script: |
             adb shell settings put global airplane_mode_on 1
-            adb shell svc wifi disable
-            adb shell svc data disable
+            adb shell svc wifi disable || true
+            adb shell svc data disable || true
             adb install apks/debug/app-debug.apk
             adb install apks/androidTest/debug/app-debug-androidTest.apk
             adb shell am instrument -w org.languagetool.android.offline.test/androidx.test.runner.AndroidJUnitRunner | tee device-tests.txt

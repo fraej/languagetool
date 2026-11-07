@@ -52,8 +52,9 @@ dependencies {
 
 // Ship the upstream license and the notices embedded in every runtime JAR.
 def generatedNotices = layout.buildDirectory.dir('generated/notices')
+def noticeConfigurations = { [configurations.debugRuntimeClasspath, configurations.coreLibraryDesugaring] }
 def collectNotices = tasks.register('collectNotices') {
-    inputs.files(configurations.debugRuntimeClasspath)
+    inputs.files(provider { noticeConfigurations() })
     inputs.file('../../COPYING.txt')
     outputs.dir(generatedNotices)
     doLast {
@@ -61,9 +62,10 @@ def collectNotices = tasks.register('collectNotices') {
         output.parentFile.mkdirs()
         output.withWriter('UTF-8') { writer ->
             writer << 'LanguageTool Offline — open-source notices\n'
-            writer << 'Source and rebuild instructions: https://github.com/fraej/languagetool/tree/master/android\n\n'
+            writer << 'Source and rebuild instructions: https://github.com/fraej/languagetool\n\n'
             writer << file('../../COPYING.txt').getText('UTF-8')
-            configurations.debugRuntimeClasspath.resolvedConfiguration.resolvedArtifacts
+            noticeConfigurations().collectMany { it.resolvedConfiguration.resolvedArtifacts.toList() }
+                    .unique { it.moduleVersion.id.toString() }
                     .sort { it.moduleVersion.id.toString() }.each { artifact ->
                 writer << "\n\n===== ${artifact.moduleVersion.id} =====\n"
                 if (artifact.extension == 'jar') {

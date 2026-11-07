@@ -69,10 +69,18 @@ POMs, so local changes to rules and engine code become part of the app. The
 Android build adapts Java 16's `Stream.toList()` in generated sources, while
 core-library desugaring supplies supported newer Java APIs on older Android.
 The desktop sources retain their original stream behavior.
+The Android sources route regex compilation through `AndroidPatterns`, which
+uses ICU's equivalent Unicode punctuation category, omits Java's Unicode
+character-class switch, and removes Java's empty flag group from grammar XML.
+Android already uses Unicode character classes. Quoted and literal expressions
+are preserved, and unsupported regexes still fail explicitly.
 
 Android's platform XML parser does not support the parameter entities used by
-the grammar files. The app bundles Xerces and selects it before initializing
-LanguageTool. The shared `RuleSaxParser` helper preserves external-DTD loading
+the grammar files. The Android build explicitly selects bundled Xerces in the
+rule loaders; Android ignores the usual Java factory-selection system property.
+SRX sentence-splitting rules use the platform parser without XSD validation,
+which Android's factory does not support. These bundled SRX rules are trusted
+application resources, not user-supplied XML. The shared `RuleSaxParser` helper preserves external-DTD loading
 being disabled and tolerates only unsupported JDK-specific entity-limit
 properties. Both grammar and disambiguation loaders use this helper.
 
