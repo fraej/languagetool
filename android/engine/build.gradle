@@ -28,6 +28,9 @@ def androidSources = tasks.register('prepareAndroidSources', Sync) {
             .replace('Map.of(Srx2SaxParser.VALIDATE_PARAMETER, true)',
                 'Map.of(Srx2SaxParser.VALIDATE_PARAMETER, false)')
             .replace('Pattern.UNICODE_CHARACTER_CLASS', '0')
+            // Keep inactive varieties' large XML rule lists collectible on phones.
+            .replace('private volatile List<AbstractPatternRule> patternRules;',
+                'private volatile List<AbstractPatternRule> patternRules;\n  public void clearAndroidPatternRules() { synchronized (patternRuleLock) { patternRules = null; } }')
             .replace('is.readAllBytes()', 'com.google.common.io.ByteStreams.toByteArray(is)')
             .replace('inputStream.readAllBytes()', 'com.google.common.io.ByteStreams.toByteArray(inputStream)')
             .replaceAll(/new Scanner\(([^,]+), StandardCharsets\.UTF_8\)/,

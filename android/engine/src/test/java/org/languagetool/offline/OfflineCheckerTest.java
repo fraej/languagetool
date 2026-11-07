@@ -59,6 +59,19 @@ public class OfflineCheckerTest {
                 "Aquesta és una pel·lícula bonica.");
     }
 
+    @Test public void allCatalanVarietiesUseTheirOwnVerbForms() throws Exception {
+        for (String language : new String[]{"ca-ES", "ca-ES-valencia", "ca-ES-balear", "ca-ES"}) {
+            assertLanguage(language, "Una casa bonic. Això és un errror.", "bonica",
+                    "Aquesta és una pel·lícula bonica.");
+        }
+        assertFalse(checker.check("Jo penso.", "ca-ES").stream()
+                .anyMatch(issue -> issue.ruleId.startsWith("EXIGEIX_VERBS_")));
+        assertTrue(checker.check("Jo penso.", "ca-ES-valencia").stream().anyMatch(issue ->
+                issue.ruleId.startsWith("EXIGEIX_VERBS_VALENCIANS") && issue.replacements.contains("pense")));
+        assertTrue(checker.check("Jo ho pense.", "ca-ES-balear").stream().anyMatch(issue ->
+                issue.ruleId.startsWith("EXIGEIX_VERBS_BALEARS") && issue.replacements.contains("pens")));
+    }
+
     @Test public void switchesLanguagesAndPreservesUnicodeOffsets() throws Exception {
         for (String language : new String[]{"es", "ca-ES", "en-US", "es"}) {
             String text = "😀\n\n" + ("ca-ES".equals(language) ? "Això és un errror."

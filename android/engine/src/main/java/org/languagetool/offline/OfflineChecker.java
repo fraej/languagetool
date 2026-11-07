@@ -3,6 +3,7 @@ package org.languagetool.offline;
 
 import org.languagetool.JLanguageTool;
 import org.languagetool.Languages;
+import org.languagetool.Language;
 import org.languagetool.rules.RuleMatch;
 
 import java.io.IOException;
@@ -15,7 +16,7 @@ import java.util.List;
 public final class OfflineChecker {
     public static final int MAX_CHARACTERS = 10_000;
     public static final List<String> SUPPORTED_LANGUAGES = Collections.unmodifiableList(
-            Arrays.asList("en-US", "en-GB", "es", "ca-ES"));
+            Arrays.asList("en-US", "en-GB", "es", "ca-ES", "ca-ES-valencia", "ca-ES-balear"));
     private JLanguageTool tool;
     private String dialect;
 
@@ -31,10 +32,14 @@ public final class OfflineChecker {
         System.setProperty("javax.xml.parsers.SAXParserFactory",
                 "org.apache.xerces.jaxp.SAXParserFactoryImpl");
         // Drop the previous checker's Java rules before loading the next one.
-        // LanguageTool retains shared dictionaries and XML rules separately.
+        // LanguageTool retains shared dictionaries separately.
         tool = null;
         dialect = null;
-        tool = new JLanguageTool(Languages.getLanguageForShortCode(requestedDialect));
+        Language requested = Languages.getLanguageForShortCode(requestedDialect);
+        for (Language language : Languages.get()) {
+            if (language != requested) language.clearAndroidPatternRules();
+        }
+        tool = new JLanguageTool(requested);
         dialect = requestedDialect;
         // No remote-rule activation, model download, or language-model directory.
     }
@@ -55,9 +60,20 @@ public final class OfflineChecker {
                 throw new IOException("Engine returned an invalid text range");
             }
             issues.add(new Issue(from, to, match.getRule().getId(), match.getMessage(),
-                    match.getRule().isDictionaryBasedSpellingRule(), match.getSuggestedReplacements()));
+                    match.getRule().isDictionaryBasedSpellingRule(), match.getSuggestedReplacements(),
+                    issueType(match)));
         }
         return Collections.unmodifiableList(issues);
+    }
+
+    private static String issueType(RuleMatch match) {
+        String type = match.getRule().getLocQualityIssueType().toString();
+        String category = match.getRule().getCategory().getId().toString();
+        if (match.getRule().isDictionaryBasedSpellingRule() || "misspelling".equalsIgnoreCase(type)) return "spelling";
+        if ("style".equalsIgnoreCase(type) || "typographical".equalsIgnoreCase(type)
+                || "formatting".equalsIgnoreCase(type) || "STYLE".equals(category)
+                || "REDUNDANCY".equals(category) || "TYPOGRAPHY".equals(category)) return "style";
+        return "grammar";
     }
 
     public static final class Issue {
@@ -67,15 +83,22 @@ public final class OfflineChecker {
         public final String message;
         public final boolean spelling;
         public final List<String> replacements;
+        public final String type;
 
         public Issue(int from, int to, String ruleId, String message, boolean spelling,
                      List<String> replacements) {
+            this(from, to, ruleId, message, spelling, replacements, spelling ? "spelling" : "grammar");
+        }
+
+        public Issue(int from, int to, String ruleId, String message, boolean spelling,
+                     List<String> replacements, String type) {
             this.from = from;
             this.to = to;
             this.ruleId = ruleId;
             this.message = message;
             this.spelling = spelling;
             this.replacements = Collections.unmodifiableList(new ArrayList<>(replacements));
+            this.type = type;
         }
 
         /** Offsets are UTF-16, as used by Android's Editable and Java strings. */

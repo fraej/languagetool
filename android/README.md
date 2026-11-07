@@ -7,7 +7,13 @@ no account, server, first-run download, or `INTERNET` permission.
 
 ## Features
 
-- English (US/UK), Spanish, and Catalan, selectable in the editor.
+- English (US/UK), Spanish, and all three Catalan engine varieties: General,
+  Valencià, and Balear. The Catalan variety buttons select each variety's actual
+  grammar, spelling, and conjugation rules.
+- Native editor styled after [fraej/webui-languagetool](https://github.com/fraej/webui-languagetool),
+  with a purple gradient, white editor card, variety pills, and compact suggestions.
+- Separate spelling, grammar, and style colors and counts; tap a marked word to
+  open its corrections. Copy, Clear, and licenses are under More options.
 - Bundled resources for every supported language, with no language-pack downloads.
 - Grammar, spelling, punctuation, and style suggestions from the local engine.
 - Automatic checking after a 700 ms typing pause, with an explicit Check button.
@@ -126,6 +132,9 @@ hosted AI services or premium checks. Optional large n-gram datasets are not
 bundled. Other languages need their own resources, dependency review, and device
 tests before being added. Startup time and memory usage vary by device; language
 resources are loaded lazily when first selected for a non-empty check.
+Inactive languages' cached XML rule lists are released when switching languages
+or varieties, while shared dictionaries remain available. This Android-only
+adaptation avoids keeping separate large Catalan grammar lists for every variety.
 The application requests Android's larger heap allowance for the bundled NLP
 models and rule caches. The multilingual engine can exceed a device's ordinary
 192 MB app heap; its available memory still depends on the device.

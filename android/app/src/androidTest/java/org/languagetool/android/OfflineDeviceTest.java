@@ -139,9 +139,56 @@ public class OfflineDeviceTest {
         }
     }
 
+    @Test public void catalanVarietiesUseDifferentVerbRules() throws Exception {
+        OfflineChecker checker = new OfflineChecker();
+        assertFalse(checker.check("Jo penso.", "ca-ES").stream()
+                .anyMatch(issue -> issue.ruleId.startsWith("EXIGEIX_VERBS_")));
+        assertTrue(checker.check("Jo penso.", "ca-ES-valencia").stream().anyMatch(issue ->
+                issue.ruleId.startsWith("EXIGEIX_VERBS_VALENCIANS") && issue.replacements.contains("pense")));
+        assertTrue(checker.check("Jo ho pense.", "ca-ES-balear").stream().anyMatch(issue ->
+                issue.ruleId.startsWith("EXIGEIX_VERBS_BALEARS") && issue.replacements.contains("pens")));
+        for (String language : new String[]{"ca-ES", "ca-ES-valencia", "ca-ES-balear", "ca-ES"}) {
+            String text = "😀\n\nAixò és un errror.";
+            OfflineChecker.Issue issue = checker.check(text, language).stream()
+                    .filter(match -> match.spelling && match.replacements.contains("error"))
+                    .findFirst().orElseThrow(AssertionError::new);
+            assertEquals("errror", text.substring(issue.from, issue.to));
+            assertEquals(text.replace("errror", "error"), issue.apply(text, "error"));
+        }
+    }
+
+    @Test public void varietyPillsAndOptionsWorkAfterRecreation() {
+        try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class)) {
+            for (int id : new int[]{R.id.catalan_general, R.id.catalan_valencian, R.id.catalan_balearic}) {
+                scenario.onActivity(activity -> {
+                    ((Spinner) activity.findViewById(R.id.checking_language)).setSelection(3);
+                    activity.findViewById(id).performClick();
+                    activity.findViewById(R.id.use_example).performClick();
+                });
+                scenario.recreate();
+                scenario.onActivity(activity -> {
+                    assertTrue(((android.widget.RadioButton) activity.findViewById(id)).isChecked());
+                    int example = id == R.id.catalan_valencian ? R.string.sample_valencian
+                            : id == R.id.catalan_balearic ? R.string.sample_balearic : R.string.sample_catalan;
+                    assertEquals(activity.getString(example), ((EditText) activity.findViewById(R.id.editor))
+                            .getText().toString());
+                    ((EditText) activity.findViewById(R.id.editor)).setText("");
+                });
+            }
+            scenario.onActivity(activity -> {
+                activity.findViewById(R.id.more_options).performClick();
+                assertEquals(View.VISIBLE, activity.findViewById(R.id.options_panel).getVisibility());
+                ((EditText) activity.findViewById(R.id.editor)).setText("Clear this text.");
+                activity.findViewById(R.id.clear_text).performClick();
+                assertEquals("", ((EditText) activity.findViewById(R.id.editor)).getText().toString());
+            });
+        }
+    }
+
     @Test public void editorAppliesCorrectionsAndRejectsStaleSuggestions() throws Exception {
         try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class)) {
             scenario.onActivity(activity -> {
+                ((Spinner) activity.findViewById(R.id.checking_language)).setSelection(0);
                 ((EditText) activity.findViewById(R.id.editor)).setText("This is a speling mistake.");
                 activity.findViewById(R.id.check_text).performClick();
             });
