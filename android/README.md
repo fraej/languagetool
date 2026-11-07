@@ -1,4 +1,4 @@
-# LanguageTool Offline for Android
+# LangT Android
 
 A native **Java** Android editor that runs this fork's LanguageTool engine on the
 device. English, Spanish, and Catalan grammar rules, dictionaries, POS data, and NLP models
@@ -12,8 +12,9 @@ no account, server, first-run download, or `INTERNET` permission.
   grammar, spelling, and conjugation rules.
 - Android Material 3 interface with a standard app bar, full-height text editor,
   language dialog, toolbar actions, and correction bottom sheets.
-- Light and dark themes follow the system, with dynamic device colors where
-  available.
+- Deep-black Material 3 theme, including the editor, dialogs, and correction sheets.
+- Bundled language flags for US/UK English, Spanish, Catalan, Valencià, and Balear.
+- A permanent Copy all icon in the app bar copies the entire document.
 - Tap a marked word or Suggestions to open corrections. Copy, Paste, Clear,
   examples, and licenses are available in the app bar's menu.
 - Bundled resources for every supported language, with no language-pack downloads.

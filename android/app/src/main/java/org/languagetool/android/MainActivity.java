@@ -18,6 +18,11 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.EditText;
+import android.widget.ArrayAdapter;
+import android.widget.CheckedTextView;
+import android.view.ViewGroup;
+import android.graphics.drawable.Drawable;
+import androidx.core.content.ContextCompat;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
@@ -36,7 +41,6 @@ import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.color.MaterialColors;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
-import com.google.android.material.snackbar.Snackbar;
 import org.languagetool.offline.OfflineChecker;
 import org.languagetool.offline.OfflineChecker.Issue;
 
@@ -52,6 +56,8 @@ import java.util.concurrent.TimeUnit;
 
 /** Material editor. LanguageTool checks run on one background worker. */
 public final class MainActivity extends AppCompatActivity {
+    private static final int[] LANGUAGE_FLAGS = {R.drawable.flag_us, R.drawable.flag_gb, R.drawable.flag_es,
+            R.drawable.flag_ca, R.drawable.flag_valencia, R.drawable.flag_balear};
     private final Handler main = new Handler(Looper.getMainLooper());
     private final ThreadPoolExecutor worker = new ThreadPoolExecutor(1, 1, 0L,
             TimeUnit.MILLISECONDS, new ArrayBlockingQueue<>(1), new ThreadPoolExecutor.DiscardOldestPolicy());
@@ -148,8 +154,7 @@ public final class MainActivity extends AppCompatActivity {
         int id = item.getItemId();
         if (id == R.id.copy_text) {
             ClipboardManager clipboard = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
-            clipboard.setPrimaryClip(ClipData.newPlainText("Checked text", editor.getText().toString()));
-            Snackbar.make(editor, R.string.copied, Snackbar.LENGTH_SHORT).setAnchorView(checkButton).show();
+            clipboard.setPrimaryClip(ClipData.newPlainText(getString(R.string.app_name), editor.getText().toString()));
         } else if (id == R.id.paste_text) {
             ClipboardManager clipboard = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
             ClipData clip = clipboard.getPrimaryClip();
@@ -173,8 +178,18 @@ public final class MainActivity extends AppCompatActivity {
         hideKeyboard();
         if (auxiliaryDialog != null) auxiliaryDialog.dismiss();
         String[] labels = getResources().getStringArray(R.array.checking_languages);
+        ArrayAdapter<String> choices = new ArrayAdapter<String>(this, R.layout.item_language, android.R.id.text1, labels) {
+            @Override public View getView(int position, View recycled, ViewGroup parent) {
+                CheckedTextView row = (CheckedTextView) super.getView(position, recycled, parent);
+                Drawable flag = ContextCompat.getDrawable(MainActivity.this, LANGUAGE_FLAGS[position]);
+                int size = (int) (24 * getResources().getDisplayMetrics().density);
+                flag.setBounds(0, 0, size, size);
+                row.setCompoundDrawablesRelative(flag, null, null, null);
+                return row;
+            }
+        };
         auxiliaryDialog = new MaterialAlertDialogBuilder(this).setTitle(R.string.choose_language)
-                .setSingleChoiceItems(labels, OfflineChecker.SUPPORTED_LANGUAGES.indexOf(selectedLanguage),
+                .setSingleChoiceItems(choices, OfflineChecker.SUPPORTED_LANGUAGES.indexOf(selectedLanguage),
                         (dialog, which) -> {
                             String requested = OfflineChecker.SUPPORTED_LANGUAGES.get(which);
                             if (!requested.equals(selectedLanguage)) {
@@ -189,9 +204,11 @@ public final class MainActivity extends AppCompatActivity {
     }
 
     private void updateLanguageLabel() {
-        String label = getResources().getStringArray(R.array.checking_languages)[
-                OfflineChecker.SUPPORTED_LANGUAGES.indexOf(selectedLanguage)];
+        int index = OfflineChecker.SUPPORTED_LANGUAGES.indexOf(selectedLanguage);
+        String label = getResources().getStringArray(R.array.checking_languages)[index];
         language.setText(label);
+        language.setChipIconResource(LANGUAGE_FLAGS[index]);
+        language.setChipIconTint(null);
         language.setContentDescription(getString(R.string.language_description, label));
     }
 
@@ -240,7 +257,7 @@ public final class MainActivity extends AppCompatActivity {
                 });
             } catch (Exception | LinkageError failure) {
                 // Exceptions may contain submitted text; log only their type.
-                Log.e("LanguageToolOffline", "Local checker failed: " + failure.getClass().getName());
+                Log.e("LangTAndroid", "Local checker failed: " + failure.getClass().getName());
                 main.post(() -> {
                     if (destroyed || revision != ticket) return;
                     progress.setVisibility(View.INVISIBLE);

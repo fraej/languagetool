@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="primary">#365F91</color>
-    <color name="on_primary">#FFFFFF</color>
-    <color name="primary_container">#D5E4FF</color>
-    <color name="on_primary_container">#001C3B</color>
-    <color name="surface">#FAF9FC</color>
-    <color name="on_surface">#191C20</color>
-    <color name="surface_low">#F2F3F7</color>
-    <color name="on_surface_variant">#43474E</color>
-    <bool name="light_system_bars">true</bool>
+    <color name="primary">#A6C8FF</color>
+    <color name="on_primary">#00305B</color>
+    <color name="primary_container">#1C4778</color>
+    <color name="on_primary_container">#D5E4FF</color>
+    <color name="surface">#000000</color>
+    <color name="on_surface">#F2F2F2</color>
+    <color name="surface_low">#000000</color>
+    <color name="on_surface_variant">#C3C7CF</color>
+    <bool name="light_system_bars">false</bool>
 </resources>

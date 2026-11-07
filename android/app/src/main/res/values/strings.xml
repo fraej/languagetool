@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <string name="app_name">LanguageTool Offline</string>
+    <string name="app_name">LangT Android</string>
     <string name="editor_hint">Start writing, or paste your text…</string>
-    <string name="privacy">On-device checking · No internet permission</string>
     <string name="sample_text" tools:ignore="Typos">This are a example. I have have a speling mistake.</string>
     <string name="sample_spanish" tools:ignore="Typos">Una casa bonito. Esto es un errror.</string>
     <string name="sample_catalan" tools:ignore="Typos">Una casa bonic. Això és un errror.</string>
@@ -22,7 +21,7 @@
     <string name="empty">Ready</string>
     <string name="no_issues">All clear</string>
     <string name="check">Check</string>
-    <string name="copy">Copy</string>
+    <string name="copy">Copy all</string>
     <string name="sample">Try an example</string>
     <string name="about">About &amp; licenses</string>
     <string name="copied">Text copied</string>
@@ -34,9 +33,8 @@
         <item quantity="other">%1$d suggestions</item>
     </plurals>
     <string name="no_replacement">Review this part of your text.</string>
-    <string name="about_text">LanguageTool Offline uses the engine, grammar rules, and dictionaries bundled with this app. Text stays on your device. No account, server, or download is needed.\n\nEnglish (US and UK), Spanish, and Catalan (General, Valencià, and Balear) are supported. Hosted AI and large n-gram models are not included.\n\nThe editor uses Android Material 3 components, system colors, and light and dark themes. LanguageTool is available under LGPL 2.1 or later; dictionaries and dependencies have their own licenses. Source: https://github.com/fraej/languagetool</string>
-    <string name="app_title">LanguageTool</string>
-    <string name="offline">Offline</string>
+    <string name="about_text">LangT Android uses the engine, grammar rules, and dictionaries bundled with this app. Text stays on your device. No account, server, or download is needed.\n\nEnglish (US and UK), Spanish, and Catalan (General, Valencià, and Balear) are supported. Hosted AI and large n-gram models are not included.\n\nThe editor uses Android Material 3 components, a deep-black theme. LanguageTool is available under LGPL 2.1 or later; dictionaries and dependencies have their own licenses. Source: https://github.com/fraej/languagetool</string>
+    <string name="app_title">LangT Android</string>
     <string name="editor_description">Text to check</string>
     <string name="default_language">Català · General</string>
     <string name="choose_language">Checking language</string>

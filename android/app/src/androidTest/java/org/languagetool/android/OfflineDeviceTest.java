@@ -255,6 +255,8 @@ public class OfflineDeviceTest {
             scenario.onActivity(activity -> {
                 assertEquals(android.content.res.Configuration.UI_MODE_NIGHT_YES,
                         activity.getResources().getConfiguration().uiMode & android.content.res.Configuration.UI_MODE_NIGHT_MASK);
+                assertEquals(android.graphics.Color.BLACK, com.google.android.material.color.MaterialColors.getColor(
+                        activity.findViewById(R.id.editor_root), com.google.android.material.R.attr.colorSurface));
                 assertEquals("Saved draft.", ((EditText) activity.findViewById(R.id.editor)).getText().toString());
                 ((EditText) activity.findViewById(R.id.editor)).setText("");
             });
@@ -262,7 +264,29 @@ public class OfflineDeviceTest {
         } finally {
             InstrumentationRegistry.getInstrumentation().runOnMainSync(() ->
                     androidx.appcompat.app.AppCompatDelegate.setDefaultNightMode(
-                            androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM));
+                            androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_YES));
+        }
+    }
+
+    @Test public void copyAllIconCopiesTheEntireDocument() {
+        try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class)) {
+            String document = "First line 😀.\nSecond line.";
+            onView(withText("LangT Android")).check(matches(isDisplayed()));
+            scenario.onActivity(activity -> {
+                assertEquals("LangT Android", activity.getPackageManager().getApplicationLabel(activity.getApplicationInfo()));
+                EditText text = activity.findViewById(R.id.editor);
+                text.setText(document);
+                text.setSelection(0, 5);
+            });
+            onView(withId(R.id.copy_text)).check(matches(isDisplayed())).perform(click());
+            scenario.onActivity(activity -> {
+                android.content.ClipboardManager clipboard = (android.content.ClipboardManager)
+                        activity.getSystemService(android.content.Context.CLIPBOARD_SERVICE);
+                assertNotNull(clipboard.getPrimaryClip());
+                assertEquals(document, clipboard.getPrimaryClip().getItemAt(0).getText().toString());
+                clipboard.clearPrimaryClip();
+                ((EditText) activity.findViewById(R.id.editor)).setText("");
+            });
         }
     }
 

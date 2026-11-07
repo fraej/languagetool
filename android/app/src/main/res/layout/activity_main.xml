@@ -17,12 +17,8 @@
             android:id="@id/checking_language" style="@style/Widget.Material3.Chip.Assist"
             android:layout_width="wrap_content" android:layout_height="wrap_content"
             android:text="@string/default_language" android:clickable="true"
-            app:ensureMinTouchTargetSize="true" app:chipIcon="@drawable/ic_language" app:chipIconTint="?attr/colorOnSurfaceVariant"
+            app:ensureMinTouchTargetSize="true" app:chipIcon="@drawable/flag_ca" app:chipIconSize="24dp" app:chipIconTint="@null"
             />
-        <Space android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1" />
-        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="@string/offline" android:textAppearance="?attr/textAppearanceLabelMedium"
-            android:textColor="?attr/colorOnSurfaceVariant" />
     </LinearLayout>
 
     <org.languagetool.android.CheckingEditText

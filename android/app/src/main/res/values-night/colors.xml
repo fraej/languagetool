@@ -4,9 +4,9 @@
     <color name="on_primary">#00305B</color>
     <color name="primary_container">#1C4778</color>
     <color name="on_primary_container">#D5E4FF</color>
-    <color name="surface">#111318</color>
-    <color name="on_surface">#E2E2E9</color>
-    <color name="surface_low">#191C20</color>
+    <color name="surface">#000000</color>
+    <color name="on_surface">#F2F2F2</color>
+    <color name="surface_low">#000000</color>
     <color name="on_surface_variant">#C3C7CF</color>
     <bool name="light_system_bars">false</bool>
 </resources>

@@ -1,4 +1,4 @@
-name: Android offline app
+name: LangT Android
 
 on:
   workflow_dispatch:

@@ -2,11 +2,11 @@
 package org.languagetool.android;
 
 import android.app.Application;
-import com.google.android.material.color.DynamicColors;
+import androidx.appcompat.app.AppCompatDelegate;
 
 public final class OfflineApplication extends Application {
     @Override public void onCreate() {
         super.onCreate();
-        DynamicColors.applyToActivitiesIfAvailable(this);
+        AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES);
     }
 }
