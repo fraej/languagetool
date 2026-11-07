@@ -3,6 +3,7 @@ name: Android offline app
 on:
   workflow_dispatch:
   push:
+    branches: [master]
     paths:
       - 'android/**'
       - 'languagetool-core/**'
@@ -38,6 +39,8 @@ jobs:
           distribution: temurin
           java-version: '17'
       - uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: false
       - name: Test engine, lint, and build APKs
         run: ./gradlew :engine:test :app:lintDebug :app:assembleDebug :app:assembleDebugAndroidTest :app:assembleRelease
       - uses: actions/upload-artifact@v4

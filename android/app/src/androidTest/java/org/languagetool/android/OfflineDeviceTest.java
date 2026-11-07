@@ -31,6 +31,7 @@ public class OfflineDeviceTest {
         assertTrue(AndroidPatterns.matches("\\1|word", "word"));
         assertFalse(AndroidPatterns.matches("\\1|word", "anything"));
         assertTrue(AndroidPatterns.matches("(a)\\12", "aa2"));
+        assertTrue(AndroidPatterns.matches("((\\-)?[0-9]+[0-9,.]*{1,30})", "-12.345"));
         assertTrue(AndroidPatterns.matches(java.util.regex.Pattern.quote("(?U)"), "(?U)"));
     }
 

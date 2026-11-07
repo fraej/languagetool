@@ -40,4 +40,19 @@ public class AndroidPatternsTest {
         assertFalse(pattern.matcher("aa").matches());
         assertEquals("\\Q\\12\\E", AndroidPatterns.numericReferences("\\Q\\12\\E", 0));
     }
+
+    @Test public void preservesNumberPatternMatchesAndCaptures() {
+        String expression = "((\\-)?[0-9]+[0-9,.]*{1,30})";
+        Pattern original = Pattern.compile(expression);
+        Pattern compatible = AndroidPatterns.compile(expression);
+        for (String number : new String[]{"25", "-25", "25,5", "-12.345", "12345678901234567890123456789012345"}) {
+            java.util.regex.Matcher expected = original.matcher(number);
+            java.util.regex.Matcher actual = compatible.matcher(number);
+            assertTrue(expected.matches());
+            assertTrue(actual.matches());
+            assertEquals(expected.group(1), actual.group(1));
+            assertEquals(expected.group(2), actual.group(2));
+        }
+        assertFalse(compatible.matcher("twenty").matches());
+    }
 }

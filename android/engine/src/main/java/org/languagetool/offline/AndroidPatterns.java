@@ -63,6 +63,13 @@ public final class AndroidPatterns {
                     continue;
                 }
             }
+            // Java ignores the second quantifier in this UNIT_SPACE number
+            // pattern. ICU rejects it; removing it keeps the captures intact.
+            if (!quoted && characterClass == 0 && expression.startsWith("*{1,30}", i)) {
+                result.append('*');
+                i += "*{1,30}".length();
+                continue;
+            }
             if (!quoted && expression.charAt(i) == '[') characterClass++;
             if (!quoted && expression.charAt(i) == ']' && characterClass > 0) characterClass--;
             result.append(expression.charAt(i++));

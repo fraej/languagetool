@@ -75,7 +75,9 @@ character-class switch, and removes Java's empty flag group from grammar XML.
 Android already uses Unicode character classes. Java's permissive numeric
 backreferences are converted to equivalent ICU expressions, preserving valid
 alternatives and trailing literal digits. Quoted and literal expressions are
-preserved, and other unsupported regexes still fail explicitly.
+preserved. A redundant quantifier in the bundled number-spacing pattern is
+removed without changing its matches or capture groups. Other unsupported
+regexes still fail explicitly.
 
 Android's platform XML parser does not support the parameter entities used by
 the grammar files. The Android build explicitly selects bundled Xerces in the
