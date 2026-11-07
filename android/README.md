@@ -82,7 +82,8 @@ backreferences are converted to equivalent ICU expressions, preserving valid
 alternatives and trailing literal digits. Quoted and literal expressions are
 preserved. A redundant quantifier in the bundled number-spacing pattern is
 removed without changing its matches or capture groups. Other unsupported
-regexes still fail explicitly.
+regexes still fail explicitly. A literal brace token in the Spanish grammar is
+escaped for ICU while retaining its Java matches.
 
 Android's platform XML parser does not support the parameter entities used by
 the grammar files. The Android build explicitly selects bundled Xerces in the

@@ -19,6 +19,15 @@ public class AndroidPatternsTest {
         assertTrue(AndroidPatterns.matches("\\P{IsPunctuation}", "a"));
     }
 
+    @Test public void preservesLiteralBracesFromSpanishGrammar() {
+        String expression = "\\{P}";
+        assertEquals("\\{P\\}", AndroidPatterns.normalize(expression));
+        assertTrue(Pattern.compile(expression).matcher("{P}").matches());
+        assertTrue(AndroidPatterns.matches(expression, "{P}"));
+        assertFalse(AndroidPatterns.matches(expression, "!"));
+        assertTrue(AndroidPatterns.matches(Pattern.quote(expression), expression));
+    }
+
     @Test public void preservesQuotedAndEscapedText() {
         String literal = "(?U)(?)\\p{IsPunctuation}";
         assertTrue(AndroidPatterns.matches(Pattern.quote(literal), literal));

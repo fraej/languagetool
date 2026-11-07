@@ -56,6 +56,8 @@ public class OfflineDeviceTest {
     @Test public void javaRegexCompatibility() {
         assertTrue(AndroidPatterns.matches("(?)id", "id"));
         assertTrue(AndroidPatterns.matches("\\p{IsPunctuation}", "!"));
+        assertTrue(AndroidPatterns.matches("\\{P}", "{P}"));
+        assertFalse(AndroidPatterns.matches("\\{P}", "!"));
         assertTrue(AndroidPatterns.compile("(?iU:example)", 256).matcher("EXAMPLE").matches());
         assertTrue(AndroidPatterns.matches("[(?)]", "("));
         assertTrue(AndroidPatterns.matches("\\1|word", "word"));

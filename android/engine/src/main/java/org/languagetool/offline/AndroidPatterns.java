@@ -38,6 +38,13 @@ public final class AndroidPatterns {
         for (int i = 0; i < expression.length();) {
             if (expression.charAt(i) == '\\' && i + 1 < expression.length()) {
                 char next = expression.charAt(i + 1);
+                // The Spanish grammar has a literal {P} token. Java accepts
+                // its unescaped closing brace; ICU requires it escaped too.
+                if (!quoted && characterClass == 0 && expression.startsWith("\\{P}", i)) {
+                    result.append("\\{P\\}");
+                    i += 4;
+                    continue;
+                }
                 if (!quoted && (next == 'p' || next == 'P')
                         && expression.startsWith("{IsPunctuation}", i + 2)) {
                     result.append('\\').append(next).append("{P}");
