@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <string name="app_name">LangT Android</string>
+    <string name="editor_hint">Start writing, or paste your text…</string>
+    <string name="sample_text" tools:ignore="Typos">This are a example. I have have a speling mistake.</string>
+    <string name="sample_spanish" tools:ignore="Typos">Una casa bonito. Esto es un errror.</string>
+    <string name="sample_catalan" tools:ignore="Typos">Una casa bonic. Això és un errror.</string>
+    <string name="sample_valencian" tools:ignore="Typos">Jo penso. Una casa bonic. Això és un errror.</string>
+    <string name="sample_balearic" tools:ignore="Typos">Jo ho pense. Una casa bonic. Això és un errror.</string>
+    <string-array name="checking_languages">
+        <item>English (US)</item>
+        <item>English (UK)</item>
+        <item>Español</item>
+        <item>Català · General</item>
+        <item>Català · Valencià</item>
+        <item>Català · Balear</item>
+    </string-array>
+    <string name="initializing">Loading language…</string>
+    <string name="checking">Checking…</string>
+    <string name="ready">Not checked</string>
+    <string name="empty">Ready</string>
+    <string name="no_issues">No issues found</string>
+    <string name="check">Check</string>
+    <string name="check_anyway">Check anyway</string>
+    <string name="language_mismatch">This text looks like %1$s, but %2$s is selected.</string>
+    <string name="use_detected_language">Use %1$s</string>
+    <string name="detected_english">English</string>
+    <string name="detected_spanish">Español</string>
+    <string name="detected_catalan">Català</string>
+    <string name="copy">Copy all</string>
+    <string name="sample">Try an example</string>
+    <string name="about">About &amp; licenses</string>
+    <string name="copied">Text copied</string>
+    <string name="ignored">Ignore</string>
+    <string name="failed">Could not check text. Tap Check text to retry.</string>
+    <string name="too_long">Check up to 10,000 characters at a time.</string>
+    <plurals name="issue_count">
+        <item quantity="one">%1$d suggestion</item>
+        <item quantity="other">%1$d suggestions</item>
+    </plurals>
+    <string name="no_replacement">Review this part of your text.</string>
+    <string name="about_text">LangT Android uses the engine, grammar rules, and dictionaries bundled with this app. Text stays on your device. No account, server, or download is needed.\n\nEnglish (US and UK), Spanish, and Catalan (General, Valencià, and Balear) are supported. Hosted AI and large n-gram models are not included.\n\nThe editor uses Android Material 3 components, a deep-black theme. LanguageTool is available under LGPL 2.1 or later; dictionaries and dependencies have their own licenses. Source: https://github.com/fraej/languagetool</string>
+    <string name="app_title">LangT Android</string>
+    <string name="editor_description">Text to check</string>
+    <string name="default_language">Català · General</string>
+    <string name="choose_language">Checking language</string>
+    <string name="language_description">Checking language: %1$s</string>
+    <string name="empty_count">0 / 10,000</string>
+    <string name="character_count">%1$,d / 10,000</string>
+    <string name="suggestions">Suggestions</string>
+    <string name="close_suggestions">Close suggestions</string>
+    <string name="issue_summary">%1$d spelling · %2$d grammar · %3$d style · %4$d language</string>
+    <string name="language_issue">Language</string>
+    <string name="checked">Checked on device</string>
+    <string name="spelling">Spelling</string>
+    <string name="grammar">Grammar</string>
+    <string name="style">Style</string>
+    <string name="insert_here">Insert here</string>
+    <string name="delete_text">Delete</string>
+    <string name="clear">Clear text</string>
+    <string name="paste">Paste</string>
+    <string name="use_corrected_text">Use corrected text</string>
+    <string name="suggestion_limit">Showing the first 100 suggestions. Apply corrections and check again.</string>
+    <string name="license_texts">License texts</string>
+    <string name="license_fallback">See the bundled resource notices and the source repository.</string>
+</resources>
