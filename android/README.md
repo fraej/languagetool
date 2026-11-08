@@ -30,6 +30,12 @@ no account, server, first-run download, or `INTERNET` permission.
   variety. Check anyway applies until the text is cleared or a different language
   is selected.
 - Highlighted error ranges, explanations, and tap-to-apply replacements.
+- Report unquoted English fragments that the Catalan engine would otherwise skip
+  during spelling checks. The finding marks the fragment as Language, retaining
+  the selected Catalan variety and the valid surrounding text. Shared Catalan
+  words, names, and paired quotations are protected; no translation is invented.
+  Whole-text detection also ignores paired quotations and inline code literals.
+- Empty results say No issues found, rather than claiming the text is error-free.
 - Ignore a suggestion for the current results; copy the corrected text.
 - Receive text through Android's Share and Process Text menus. For editable
   Process Text requests, return the corrected text to the calling app.

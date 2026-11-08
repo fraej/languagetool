@@ -34,7 +34,8 @@ public final class WrittenLanguageDetector {
         if (textFactory == null) textFactory = new TextObjectFactoryBuilder()
                 .maxTextLength(MAX_SAMPLE).withTextFilter(UrlTextFilter.getInstance())
                 .withTextFilter(new CharNormalizerTextFilterImpl()).build();
-        String sample = EMAIL.matcher(text.substring(0, Math.min(text.length(), MAX_SAMPLE))).replaceAll(" ");
+        String unquoted = QuotedText.withoutQuotations(text);
+        String sample = EMAIL.matcher(unquoted.substring(0, Math.min(unquoted.length(), MAX_SAMPLE))).replaceAll(" ");
         sample = textFactory.forText(sample).toString();
         Matcher words = WORD.matcher(sample);
         int count = 0, letters = 0;

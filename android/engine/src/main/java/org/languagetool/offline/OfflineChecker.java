@@ -42,6 +42,7 @@ public final class OfflineChecker {
             if (language != requested) language.clearAndroidPatternRules();
         }
         tool = new JLanguageTool(requested);
+        if (requested.getShortCode().equals("ca")) tool.addRule(new ForeignLanguageRule());
         dialect = requestedDialect;
         // No remote-rule activation, model download, or language-model directory.
     }
@@ -85,6 +86,7 @@ public final class OfflineChecker {
     }
 
     private static String issueType(RuleMatch match) {
+        if (match.getRule() instanceof ForeignLanguageRule) return "language";
         String type = match.getRule().getLocQualityIssueType().toString();
         String category = match.getRule().getCategory().getId().toString();
         if (match.getRule().isDictionaryBasedSpellingRule() || "misspelling".equalsIgnoreCase(type)) return "spelling";

@@ -54,4 +54,9 @@ public class WrittenLanguageDetectorTest {
     @Test public void refusesUnsupportedSelections() {
         assertThrows(IllegalArgumentException.class, () -> detector.mismatch("This is a test.", "unsupported"));
     }
+
+    @Test public void quotedEnglishDoesNotOverrideTheCatalanLanguageOfTheDocument() throws Exception {
+        assertNull(detector.mismatch("Ara no ho sé dir. “The weather is nice. This is a sentence in English.”", "ca-ES-balear"));
+        assertEquals("en", detector.mismatch("I'm writing a sentence in English. I don't want apostrophes treated as quotations.", "ca-ES"));
+    }
 }

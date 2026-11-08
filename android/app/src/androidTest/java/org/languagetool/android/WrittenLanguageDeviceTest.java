@@ -103,6 +103,38 @@ public class WrittenLanguageDeviceTest {
         assertNull(detector.mismatch("Bon dia", "en-US"));
     }
 
+    @Test public void balearicCatalanFlagsTheMixedLanguageScreenshot() throws Exception {
+        String text = "Ara no ho sé dir. nom the less";
+        assertTrue(InstrumentationRegistry.getInstrumentation().getTargetContext().getSharedPreferences("preferences", 0)
+                .edit().putString("language", "ca-ES-balear").commit());
+        try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class)) {
+            enterAndCheck(scenario, text);
+            awaitStatus(scenario, R.string.checked);
+            onView(withId(R.id.checking_language)).check(matches(withText("Català · Balear")));
+            scenario.onActivity(activity -> {
+                EditText editor = activity.findViewById(R.id.editor);
+                assertEquals(text, editor.getText().toString());
+                boolean marked = false;
+                android.text.Spannable value = editor.getText();
+                for (android.text.style.UnderlineSpan span : value.getSpans(0, value.length(), android.text.style.UnderlineSpan.class)) {
+                    if (value.getSpanStart(span) == 22 && value.getSpanEnd(span) == 30) marked = true;
+                }
+                assertTrue("The skipped English fragment must be marked", marked);
+            });
+            OfflineDeviceTest.screenshot("mixed-language.png");
+            onView(withId(R.id.show_suggestions)).perform(click());
+            onView(withText("Language")).inRoot(androidx.test.espresso.matcher.RootMatchers.isDialog()).check(matches(isDisplayed()));
+            onView(withText("the less")).inRoot(androidx.test.espresso.matcher.RootMatchers.isDialog()).check(matches(isDisplayed()));
+            OfflineDeviceTest.screenshot("mixed-language-suggestion.png");
+            onView(withId(R.id.close_suggestions)).perform(click());
+            scenario.onActivity(activity -> ((EditText) activity.findViewById(R.id.editor)).getText()
+                    .replace(18, text.length(), "No obstant això, ho intentaré."));
+            awaitStatus(scenario, R.string.no_issues);
+            onView(withId(R.id.checking_language)).check(matches(withText("Català · Balear")));
+            clear(scenario);
+        }
+    }
+
     private static ActivityScenario<MainActivity> catalanEditor() {
         assertTrue(InstrumentationRegistry.getInstrumentation().getTargetContext().getSharedPreferences("preferences", 0)
                 .edit().putString("language", "ca-ES").putString("preferred_en", "en-GB").commit());

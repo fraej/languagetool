@@ -385,7 +385,7 @@ public final class MainActivity extends AppCompatActivity {
                 : getResources().getQuantityString(R.plurals.issue_count, issues.size(), issues.size()));
         for (Issue issue : issues) {
             int color = "spelling".equals(issue.type) ? com.google.android.material.R.attr.colorErrorContainer
-                    : "style".equals(issue.type) ? com.google.android.material.R.attr.colorPrimaryContainer
+                    : "style".equals(issue.type) || "language".equals(issue.type) ? com.google.android.material.R.attr.colorPrimaryContainer
                     : com.google.android.material.R.attr.colorTertiaryContainer;
             Editable text = editor.getText();
             text.setSpan(new UnderlineSpan(), issue.from, issue.to, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
@@ -410,14 +410,15 @@ public final class MainActivity extends AppCompatActivity {
         sheet.getBehavior().setMaxHeight((int) (getResources().getDisplayMetrics().heightPixels * 0.85f));
         sheet.findViewById(R.id.close_suggestions).setOnClickListener(view -> sheet.dismiss());
         LinearLayout cards = sheet.findViewById(R.id.suggestions);
-        int spelling = 0, grammar = 0, style = 0;
+        int spelling = 0, grammar = 0, style = 0, language = 0;
         for (Issue issue : displayedIssues) {
             if ("spelling".equals(issue.type)) spelling++;
             else if ("style".equals(issue.type)) style++;
+            else if ("language".equals(issue.type)) language++;
             else grammar++;
         }
         ((TextView) sheet.findViewById(R.id.issue_summary)).setText(
-                getString(R.string.issue_summary, spelling, grammar, style));
+                getString(R.string.issue_summary, spelling, grammar, style, language));
         List<Issue> visible = focus == null ? displayedIssues : Collections.singletonList(focus);
         for (Issue issue : visible.subList(0, Math.min(100, visible.size()))) cards.addView(issueCard(cards, issue));
         if (visible.size() > 100) {
@@ -435,7 +436,8 @@ public final class MainActivity extends AppCompatActivity {
         View card = getLayoutInflater().inflate(R.layout.item_suggestion, parent, false);
         TextView type = card.findViewById(R.id.issue_type);
         type.setText("spelling".equals(issue.type) ? R.string.spelling
-                : "style".equals(issue.type) ? R.string.style : R.string.grammar);
+                : "style".equals(issue.type) ? R.string.style
+                : "language".equals(issue.type) ? R.string.language_issue : R.string.grammar);
         type.setTextColor(MaterialColors.getColor(card, "spelling".equals(issue.type)
                 ? com.google.android.material.R.attr.colorError : com.google.android.material.R.attr.colorPrimary));
         TextView word = card.findViewById(R.id.issue_word);
